@@ -10,8 +10,7 @@ OBJ:=$(patsubst %.c, %.o, $(filter %.c, $(SRC))) \
 	$(patsubst %.S, %.o, $(filter %.S, $(SRC)))
 
 # Makes the .d header dependency connections
-MKDEP = $(CC) -MM -MG $(CFLAGS) "$*.c" \
-	| sed -e "s@^\(.*\)\:@$*.d $*.o\:@" > $@
+MKDEP = printf $*.d\ > $@; $(CC) -MM -MG $(CFLAGS) "$*.c" >> $@
 
 CFLAGS:=$(CFLAGS) -g3 -O0 -mthumb -mcpu=cortex-m0 -fno-stack-protector \
 	-ffunction-sections -fdata-sections -fmessage-length=0 -Wall -fno-builtin -Wa,-mcpu=cortex-m0,-mthumb,-EL
@@ -28,7 +27,7 @@ LDFLAGS:=$(LDFLAGS) -Bstatic -lgcc --specs=nosys.specs -mcpu=cortex-m0 \
 %.d: %.c
 	@$(MKDEP)
 
-#-include $(SRC:%.c=%.d)
+-include $(patsubst %.c, %.d, $(filter %.c, $(SRC)))
 
 prg: $(OBJ) linker.ld
 	$(CC) $(LDFLAGS) $(CFLAGS) $(OBJ) -T linker.ld -o $@

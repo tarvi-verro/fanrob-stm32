@@ -1,11 +1,33 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "f0-gpio.h"
+#include "f0-rcc.h"
+#include "conf.h"
+
+#define __CCAT(A,B) A ## B
+#define _CCAT(A,B) __CCAT(A,B)
+#define __CCAT3(A,B,C) A ## B ## C
+#define _CCAT3(A,B,C) __CCAT3(A,B,C)
+
+#define io_blue _CCAT(gpio_reg_, led_blue_port)
+#define pin_blue _CCAT(pin, led_blue_pin)
+#define iop_blue_en _CCAT3(iop, led_blue_port, _en)
+
+#define io_green _CCAT(gpio_reg_, led_green_port)
+#define pin_green _CCAT(pin, led_green_pin)
+#define iop_green_en _CCAT3(iop, led_green_port, _en)
+
+#define io_user _CCAT(gpio_reg_, btn_user_port)
+#define pin_user _CCAT(pin, btn_user_pin)
+#define iop_user_en _CCAT3(iop, btn_user_port, _en)
+
 
 /* See DM00091010 - memory registers page 37 */
-static uint32_t *const rcc = (uint32_t *) 0x40021000;
+static volatile struct rcc_reg *const rcc = (struct rcc_reg *) 0x40021000;
 static uint32_t *const gpioc = (uint32_t *) 0x48000800;
 static uint32_t *const gpioa = (uint32_t *) 0x48000000;
+static volatile struct gpio_reg *const gpio_reg_a = (struct gpio_reg *) 0x48000000;
+static volatile struct gpio_reg *const gpio_reg_c = (struct gpio_reg *) 0x48000800;
 static uint32_t *const tim1 = (uint32_t *) 0x40012C00;
 static uint32_t *const exti = (uint32_t *) 0x40010400;
 static uint32_t *const syscfg = (uint32_t *) 0x40010000;
@@ -58,9 +80,9 @@ void lcd_res()
 void setup_lcd(void)
 {
 	uint32_t t;
-	rcc[6] |= 1 << 12; /* RCC_APB2ENR, SPI1EN */
-	rcc[5] |= 1 << 17; /* RCC_AHBENR, IOPA-EN */
-	rcc[5] |= 1 << 19; /* RCC_AHBENR, IOPC-en */
+	rcc->apb2enr.spi1_en = 1;
+	rcc->ahbenr.iopa_en = 1;
+	rcc->ahbenr.iopc_en = 1;
 
 	const int mosi = 7;
 	const int miso = 6;
@@ -154,17 +176,11 @@ void setup_lcd(void)
 void setup_usrbtn(void)
 {
 	uint32_t t;
-	rcc[5] |= 1 << 17; /* RCC_AHBENR, IOPA-EN */
-	rcc[6] |= 1 << 0; /* RCC_APB2ENR, SYSCFGEN */
+	rcc->ahbenr.iop_user_en = 1;
+	rcc->apb2enr.syscfg_en = 1;
 
-	const int n = 0; /* PA0 */
-
-	gpioa[0] &= ~(3 << (n * 2)); /* GPIOx_MODER */
-
-	t = gpioa[3]; /* GPIOx_PUPDR */
-	t &= ~(3 << (n * 2));
-	t |= 2 << (n * 2);
-	gpioa[3] = t;
+	io_user->moder.pin_user = GPIO_MODER_IN;
+	io_user->pupdr.pin_user = GPIO_PUPDR_PULLDOWN;
 
 	const int trig = 0; /* page 174 : PA0 -> EXTI0 */
 	exti[0] |= 1 << trig; /* EXTI_IMR */
@@ -189,36 +205,20 @@ void setup_usrbtn(void)
 
 void setup_leds(void)
 {
-	uint32_t t;
-	rcc[5] |= 1 << 19; /* RCC_AHBENR, IOPC-en */
+	rcc->ahbenr.iop_blue_en = 1;
+	rcc->ahbenr.iop_green_en = 1;
 
-	/* PC8 is the blue led */
-	const int n = 8; /* blue */
-	const int m = 9; /* green */
+	io_green->moder.pin_green = GPIO_MODER_OUT;
+	io_blue->moder.pin_blue = GPIO_MODER_OUT;
 
-	t = gpioc[0]; /* GPIOx_MODER */
-	t &= ~(3 << (n * 2) | 3 << (m * 2));
-	t |= 1 << (n * 2) | 1 << (m * 2);
-	gpioc[0] = t;
+	io_green->ospeedr.pin_green = GPIO_OSPEEDR_LOW;
+	io_blue->ospeedr.pin_blue = GPIO_OSPEEDR_LOW;
 
-	//t = gpioc[1]; /* GPIOx_OTYPER, default push-pullc */
-	//t &= ~(1 << n);
-	//t |= 1 << n;
-	//gpioc[1] = t;
+	io_green->otyper.pin_green = GPIO_OTYPER_PP;
+	io_blue->otyper.pin_blue = GPIO_OTYPER_PP;
 
-	t = gpioc[2]; /* GPIOx_OSPEEDR */
-	t &= ~(3 << (n * 2) | 3 << (m * 2));
-	t |= 0 << (n * 2);
-	gpioc[2] = t;
-
-	//gpioc[3] = 2 << (n * 2); /* GPIOx_PUPDR */
-
-	t = gpioc[5]; /* GPIOx_ODR */
-	t |= 1 << n | 1 << m;
-	gpioc[5] = t;
-
-	//gpioc[6] = 1 << n; /* GPIOx_BSRR */
-
+	io_green->bsrr.set.pin_green = 1;
+	io_blue->bsrr.set.pin_blue = 1;
 }
 
 static int somec = 0;
@@ -228,7 +228,7 @@ void nvic_exti_0_1(void)
 	exti[5] |= (1); /* EXTI_PR */
 	if (somec)
 		return;
-	gpioc[5] ^= 1 << 9;
+	io_green->odr.pin_green ^= 1;
 	somec = 2;
 	//*nvic_icpr |= 1; /* NVIC_ISPR */
 
@@ -261,7 +261,7 @@ void assert(bool cnd)
 		a = z & 0xffff;
 		if (a != 0x0 && a != 0x8000)
 			continue;
-		gpioc[5] ^= 1 << 9;
+		io_green->odr.pin_green ^= 1;
 	}
 }
 
@@ -280,8 +280,8 @@ int main(void)
 			continue;
 		if (somec)
 			somec--;
-		if ((gpioc[5] & (1 << 9)))
-			gpioc[5] ^= 1 << 8;
+		if (io_green->odr.pin_green)
+			io_blue->odr.pin_blue ^= 1;
 	}
 }
 
