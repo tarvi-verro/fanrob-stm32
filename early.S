@@ -79,9 +79,9 @@ vecs:
 	.word undef_interr	// 0x48, RTC interrupts
 	.word undef_interr	// 0x4C, flash global interr
 	.word undef_interr	// 0x50, RCC global
-	.word undef_interr	// 0x54, EXTI
-	.word undef_interr	// 0x58, EXTI
-	.word undef_interr	// 0x5C, EXTI
+	.word nvic_exti_0_1	// 0x54, EXTI_0_1
+	.word undef_interr	// 0x58, EXTI_2_3
+	.word undef_interr	// 0x5C, EXTI_4_15
 	.word 0			// 0x60, reserved
 	.word undef_interr	// 0x64, DMA_CH1
 	.word undef_interr	// 0x68, DMA_CH2_3
