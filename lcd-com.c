@@ -148,8 +148,13 @@ static void lcd_initsequence()
 {
 	uint8_t cmd[] = {
 		FNSET | H,
+#if 1
+		BSSET | 5, /* 0 -- 7 */
+		VOPSET | 0x34, /* 0 -- 0x7f */
+#else
 		BSSET | 4, /* 0 -- 7 */
 		VOPSET | 0x2e, /* 0 -- 0x7f */
+#endif
 
 		FNSET,
 		DISPCTL, /* display blank */
