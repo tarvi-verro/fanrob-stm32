@@ -29,6 +29,7 @@ struct gpio_otyper {
 enum {
 	GPIO_OSPEEDR_LOW,
 	GPIO_OSPEEDR_MEDIUM,
+	GPIO_OSPEEDR_RESERVED,
 	GPIO_OSPEEDR_HIGH,
 };
 struct gpio_ospeedr {

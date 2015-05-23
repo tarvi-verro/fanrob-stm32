@@ -1,6 +1,20 @@
 #include <stdint.h>
 #include <stddef.h>
 
+enum {
+	RCC_P_PRE_NONE,
+	RCC_P_PRE_2 = 4,
+	RCC_P_PRE_4,
+	RCC_P_PRE_8,
+	RCC_P_PRE_16,
+};
+_Static_assert (RCC_P_PRE_16 == 7, "RCC_P_PRE broken.");
+struct rcc_cfgr {
+	uint32_t sw : 2, sws : 2, h_pre : 4, p_pre : 3, : 3, adc_pre : 1, : 1,
+		 pll_src : 1, pllxt_pre : 1, pll_mul : 4, : 2, mco : 4,
+		 mco_pre : 3, pll_nodiv : 1;
+};
+
 struct rcc_ahbenr {
 	uint32_t dma_en : 1, : 1, sram_en : 1, : 1, flitf_en : 1, : 1,
 		 crc_en : 1, : 10, iopa_en : 1, iopb_en : 1, iopc_en : 1,
@@ -17,7 +31,7 @@ struct rcc_apb2enr {
 
 struct rcc_reg {
 	uint32_t cr;
-	uint32_t cfgr;
+	struct rcc_cfgr cfgr;
 	uint32_t cir;
 	uint32_t apb2rstr;
 	uint32_t apb1rstr;

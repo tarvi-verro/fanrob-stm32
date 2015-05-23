@@ -5,7 +5,7 @@ LD:=arm-none-eabi-ld
 
 all: prg
 
-SRC:=main.c early.S early_reset.c
+SRC:=main.c early.S early_reset.c cpydrv.c lcd-com.c
 OBJ:=$(patsubst %.c, %.o, $(filter %.c, $(SRC))) \
 	$(patsubst %.S, %.o, $(filter %.S, $(SRC)))
 
