@@ -11,7 +11,8 @@ extern void lcd_send(bool data_mode /* false:command mode */,
 		const uint8_t *a, int l);
 
 extern void setup_lcd(void);
-extern void lcd_sendstuff();
+extern void lcd_tick();
+extern void lcd_switch();
 
 void setup_usrbtn(void)
 {
@@ -105,9 +106,10 @@ int main(void)
 		if (somec) {
 			somec--;
 			if (!somec) {
-				lcd_sendstuff();
+				lcd_switch();
 			}
 		}
+		lcd_tick();
 		if (io_green->odr.pin_green)
 			io_blue->odr.pin_blue ^= 1;
 	}

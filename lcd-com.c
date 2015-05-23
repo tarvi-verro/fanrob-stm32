@@ -1,9 +1,22 @@
 #include "f0-gpio.h"
 #include "f0-spi.h"
 #include "f0-rcc.h"
+#include "f0-dma.h"
 #include <stdbool.h>
 
 #include "conf.h"
+
+#define VOPSET	(1 << 7)
+#define BSSET	(1 << 4) /* H=1 */
+#define FNSET	(1 << 5)
+#define H	(1 << 0) /* extended instruction set */
+#define V	(1 << 1) /* use vertical addressing */
+#define PD	(1 << 2)
+#define DISPCTL	(1 << 3)
+#define D	(1 << 2)
+#define E	(1 << 0)
+#define WIDTH	84
+#define HEIGTH	48
 
 extern void PCD8544_Init(unsigned char contrast);
 
@@ -11,6 +24,11 @@ extern void assert(bool);
 
 void lcd_send(bool data_mode /* false:command mode */,
 		const uint8_t *a, int l);
+
+void lcd_tick();
+void lcd_switch();
+static void lcd_sendstuff();
+static void lcd_initsequence();
 
 void setup_lcd(void)
 {
@@ -69,10 +87,10 @@ void setup_lcd(void)
 	io_lcd->bsrr.reset.pin_lcd_vdd = 1; /* set to low */
 
 	/* Setting up SPI */
-	spi_lcd->cr1.cpha = 1; /* CPHA, second clock edge for data capture */
+	spi_lcd->cr1.cpha = 0; /* CPHA, second clock edge for data capture */
 	spi_lcd->cr1.cpol = 0; /* CPOL, clock polarity high when idle */
 	spi_lcd->cr1.mstr = 1; /* MSTR, master sel */
-	spi_lcd->cr1.br = SPI_BR_8; /* BR */
+	spi_lcd->cr1.br = SPI_BR_2; /* BR */
 	spi_lcd->cr1.lsbfirst = 0; /* LSBFIRST */
 	spi_lcd->cr1.ssi = 0; /* SSI */
 	spi_lcd->cr1.ssm = 0; /* SSM, software slave mngment */
@@ -85,7 +103,7 @@ void setup_lcd(void)
 
 
 	spi_lcd->cr2.rxdma_en = 0;
-	spi_lcd->cr2.txdma_en = 0;
+	spi_lcd->cr2.txdma_en = 1;
 	spi_lcd->cr2.ssoe = 1; /* SSOE */
 	spi_lcd->cr2.nssp = 1; /* NSSP, NSS pulse between data */
 	spi_lcd->cr2.frf = 0; /* FRF, frame format motorola */
@@ -95,7 +113,22 @@ void setup_lcd(void)
 	spi_lcd->cr2.ds = SPI_DS_8;
 	spi_lcd->cr2.frxth = 0; /* FRXTH, fifo reception thresh. (fxne ev) */
 
+	/* Setup DMA, */
+	rcc->ahbenr.dma_en = 1;
+	dma->ch_lcd.ccr.pl = 1; /* priority medium */
+	dma->ch_lcd.ccr.msize = DMA_MSIZE_8;
+	dma->ch_lcd.ccr.psize = DMA_PSIZE_8;
+	dma->ch_lcd.ccr.dir = DMA_DIR_FMEM;
+	dma->ch_lcd.ccr.circ = 0; /* circular mode */
+	dma->ch_lcd.ccr.minc = 1; /* increment memory addr */
+	dma->ch_lcd.ccr.pinc = 0; /* periperal address does not change */
+	dma->ch_lcd.ccr.htie = 0; /* half-transfter interrupt */
+	dma->ch_lcd.ccr.tcie = 0; /* transfer complete interrupt */
+	dma->ch_lcd.ccr.teie = 0; /* transfer error interrupt */
+	dma->ch_lcd.pa = (uint32_t) &spi_lcd->dr;
+	//dma->ch_lcd.ma = (uint32_t) 0;
 
+	/* Initialisation sequence */
 	int i;
 	io_lcd->bsrr.set.pin_lcd_vdd = 1;
 	io_lcd->bsrr.reset.pin_lcd_nss = 1;
@@ -108,12 +141,32 @@ void setup_lcd(void)
 	io_lcd->moder.pin_lcd_nss = GPIO_MODER_AF;
 	spi_lcd->cr1.spe = 1; /* SPI1_CR1, SPE, spi enable */
 	assert(!spi_lcd->sr.modf); /* MODF, mode fault */
-	PCD8544_Init(0x36);
+	lcd_initsequence();
+}
 
-		uint8_t cmd[] = {
-			32 | 0,
-		};
-		lcd_send(false, cmd, sizeof(cmd));
+static void lcd_initsequence()
+{
+	uint8_t cmd[] = {
+		FNSET | H,
+		BSSET | 4, /* 0 -- 7 */
+		VOPSET | 0x2e, /* 0 -- 0x7f */
+
+		FNSET,
+		DISPCTL, /* display blank */
+		DISPCTL | D, /* normal mode */
+	};
+	lcd_send(false, cmd, sizeof(cmd));
+	/* Clear all of lcd with some magic */
+	io_lcd->bsrr.set.pin_lcd_dc = 1; /* data */
+	dma->ch_lcd.ccr.minc = 0; /* no memory increment */
+	uint8_t zero = 0; /* send this over and over again */
+	dma->ch_lcd.ma = (uint32_t) &zero;
+	dma->ch_lcd.ndt = (WIDTH*HEIGTH/8); /* this many times */
+
+	dma->ch_lcd.ccr.en = 1;
+	while (dma->ch_lcd.ndt);
+	dma->ch_lcd.ccr.en = 0;
+	dma->ch_lcd.ccr.minc = 1; /* reset correct setting */
 }
 
 void lcd_send(bool data_mode /* false:command mode */,
@@ -123,6 +176,8 @@ void lcd_send(bool data_mode /* false:command mode */,
 	assert(!spi_lcd->sr.ftlvl);
 	assert(spi_lcd->sr.txe);
 	assert(!spi_lcd->sr.modf);
+	assert(l > 0);
+	assert(!dma->ch_lcd.ccr.en || dma->isr.ch_lcd.tcif);
 
 	if (data_mode)
 		io_lcd->bsrr.set.pin_lcd_dc = 1;
@@ -131,55 +186,52 @@ void lcd_send(bool data_mode /* false:command mode */,
 
 	int i;
 
-	//for (i = 0; i < 100; i++);
-
-	//io_lcd->bsrr.reset.pin_lcd_nss = 1;
-
-	for (i = 0; i < l; i++) {
-		spi_lcd->dr.dr = a[i];
-		while (spi_lcd->sr.bsy);
+	if (l == 1) {
+		for (i = 0; i < l; i++) {
+			spi_lcd->dr.dr = a[i];
+			while (spi_lcd->sr.bsy);
+		}
+	} else {
+		dma->ch_lcd.ma = (uint32_t) a;
+		dma->ch_lcd.ndt = l;
+		dma->ch_lcd.ccr.en = 1;
+		while (dma->ch_lcd.ndt);
+		dma->ch_lcd.ccr.en = 0;
+		dma->ifcr.ch_lcd.ctcif = 1;
 	}
 
 	while (spi_lcd->sr.bsy);
-	//io_lcd->bsrr.set.pin_lcd_nss = 1;
-	//if (data_mode)
-	//	io_lcd->bsrr.reset.pin_lcd_dc = 1;
-
 
 }
 
-extern void PCD8544_Putc(char c, int color, int size);
-extern void PCD8544_Home(void);
-extern void PCD8544_Clear(void);
-extern void PCD8544_Refresh(void);
-extern void PCD8544_Invert(int invert);
-extern void PCD8544_DrawFilledRectangle(unsigned char x0, unsigned char y0,
-		unsigned char x1, unsigned char y1, int color);
-static unsigned int mytoggle = 1;
-void lcd_sendstuff()
+static int online = 0;
+void lcd_tick()
 {
-	mytoggle++;
-	if ((mytoggle & 1) == 1) {
-#if 1
-			uint8_t dat[] = {
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-				1 | 0 | 4 | 8 | 16 | 32 | 0 | 128,
-			};
-			lcd_send(true, dat, sizeof(dat));
-#else
-		PCD8544_Clear();
-		PCD8544_Home();
-		PCD8544_Puts("Hello sweet world!", 1, 0);
-		PCD8544_Refresh();
-#endif
-	} else {
-		PCD8544_Invert(!(mytoggle & 1));
-	}
+	if (!online)
+		return;
+	lcd_sendstuff();
+}
+
+void lcd_switch()
+{
+	online ^= 1;
+	uint8_t cmd = DISPCTL | D
+		| (online ? E : 0);
+	lcd_send(false, &cmd, 1);
+}
+
+static void lcd_sendstuff()
+{
+	uint8_t dat[] = {
+		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128,
+		1 | 0 | 0 | 0 | 0  | 0  | 0  | 128,
+		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
+		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
+		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
+		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
+		1 | 0 | 0 | 0 | 0  | 0  | 0  | 128,
+		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128,
+	};
+	lcd_send(true, dat, sizeof(dat));
 }
 
