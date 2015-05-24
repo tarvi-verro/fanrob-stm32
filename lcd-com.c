@@ -2,6 +2,7 @@
 #include "f0-spi.h"
 #include "f0-rcc.h"
 #include "f0-dma.h"
+#include "f0-tim.h"
 #include <stdbool.h>
 
 #include "conf.h"
@@ -29,6 +30,7 @@ void lcd_tick();
 void lcd_switch();
 static void lcd_sendstuff();
 static void lcd_initsequence();
+static void lcd_bglight();
 
 void setup_lcd(void)
 {
@@ -52,13 +54,7 @@ void setup_lcd(void)
 	io_lcd->otyper.pin_lcd_res = GPIO_OTYPER_PP;
 	io_lcd->bsrr.reset.pin_lcd_res = 1;
 
-	/* Background lights */
-	io_lcd->moder.pin_lcd_bg = GPIO_MODER_OUT;
-	io_lcd->ospeedr.pin_lcd_bg = GPIO_OSPEEDR_LOW;
-	io_lcd->otyper.pin_lcd_bg = GPIO_OTYPER_PP;
-	io_lcd->pupdr.pin_lcd_bg = GPIO_PUPDR_NONE;
-	//io_lcd->afr = 1; /* tim3 ch1 */
-	io_lcd->bsrr.set.pin_lcd_bg = 1;
+	lcd_bglight();
 
 	/* Chip select */
 	io_lcd->moder.pin_lcd_nss = GPIO_MODER_OUT; /* reconf to AF later */
@@ -210,6 +206,7 @@ void lcd_send(bool data_mode /* false:command mode */,
 }
 
 static int online = 0;
+static int f = 0;
 void lcd_tick()
 {
 	if (!online)
@@ -223,6 +220,9 @@ void lcd_switch()
 	uint8_t cmd = DISPCTL | D
 		| (online ? E : 0);
 	lcd_send(false, &cmd, 1);
+	int z = f % 5;
+	tim3->ccr1 = (1250 / (z + 1) - 250);
+	f++;
 }
 
 static void lcd_sendstuff()
@@ -240,3 +240,33 @@ static void lcd_sendstuff()
 	lcd_send(true, dat, sizeof(dat));
 }
 
+static void lcd_bglight()
+{
+	/* Background lights */
+	io_lcd->moder.pin_lcd_bg = GPIO_MODER_AF;
+	io_lcd->ospeedr.pin_lcd_bg = GPIO_OSPEEDR_MEDIUM;
+	io_lcd->otyper.pin_lcd_bg = GPIO_OTYPER_PP;
+	io_lcd->pupdr.pin_lcd_bg = GPIO_PUPDR_NONE;
+	io_lcd->afr.pin_lcd_bg = 1; /* tim3 ch1 */
+	//io_lcd->bsrr.set.pin_lcd_bg = 1;
+
+	rcc->apb1enr.tim3_en = 1;
+	/* Setup tim3 */
+	tim3->arr = 1000; /* auto-reload aka period */
+	tim3->ccr1 = 250; /* duty cycle */
+	//tim3->cnt = 500;
+	tim3->psc = 8 - 1; /* prescaler */
+	tim3->ccmr.ch1.out.ccs = TIM_CCS_OUT; /* output */
+	tim3->ccmr.ch1.out.ocm = 6; /* 110 -- pwm mode 1 */
+	tim3->ccmr.ch1.out.ocpe = 1; /* preload enable, enables changing ccr1
+					on the fly */
+//	tim3->cr1.arpe = 1; /* auto-preload enable */
+	tim3->cr1.dir = TIM_DIR_UPCNT; /* upcounter */
+//	tim3->ccer.cc1p = 0; /* polarity */
+//	tim3->ccer.cc1ne = 0;
+//	tim3->egr.cc1g = 1; /* capture/compare generation */
+	tim3->egr.ug = 1; /* update generation */
+	tim3->ccer.cc1e = 1;
+	tim3->bdtr.moe = 1; /* main output enable */
+	tim3->cr1.cen = 1; /* enable */
+}

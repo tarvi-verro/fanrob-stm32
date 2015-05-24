@@ -29,6 +29,13 @@ struct rcc_apb2enr {
 		 : 9;
 };
 
+struct rcc_apb1enr {
+	uint32_t : 1, tim3_en : 1, : 2, tim6_en : 1, tim7_en : 1, : 2,
+		 wwdg_en : 1, : 2, spi2_en : 1, : 2, usart2_en : 1,
+		 usart3_en : 1, usart4_en : 1, usart5_en : 1, i2c1_en : 1,
+		 i2c2_en : 1, usb_en : 1, : 4, pwr_en : 1, : 3;
+};
+
 struct rcc_reg {
 	uint32_t cr;
 	struct rcc_cfgr cfgr;
@@ -37,7 +44,7 @@ struct rcc_reg {
 	uint32_t apb1rstr;
 	struct rcc_ahbenr ahbenr;
 	struct rcc_apb2enr apb2enr;
-	uint32_t apb1enr;
+	struct rcc_apb1enr apb1enr;
 	uint32_t bdcr;
 	uint32_t csr;
 	uint32_t ahbrstr;
