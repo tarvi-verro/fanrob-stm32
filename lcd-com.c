@@ -17,7 +17,7 @@
 #define D	(1 << 2)
 #define E	(1 << 0)
 #define WIDTH	84
-#define HEIGTH	48
+#define HEIGHT	48
 
 extern void PCD8544_Init(unsigned char contrast);
 
@@ -162,7 +162,7 @@ static void lcd_initsequence()
 	dma->ch_lcd.ccr.minc = 0; /* no memory increment */
 	uint8_t zero = 0; /* send this over and over again */
 	dma->ch_lcd.ma = (uint32_t) &zero;
-	dma->ch_lcd.ndt = (WIDTH*HEIGTH/8); /* this many times */
+	dma->ch_lcd.ndt = (WIDTH*HEIGHT/8); /* this many times */
 
 	dma->ch_lcd.ccr.en = 1;
 	while (dma->ch_lcd.ndt);
