@@ -16,6 +16,8 @@
 #define DISPCTL	(1 << 3)
 #define D	(1 << 2)
 #define E	(1 << 0)
+#define SETY	(1 << 6)
+#define SETX	(1 << 7)
 #define WIDTH	84
 #define HEIGHT	48
 
@@ -26,9 +28,6 @@ extern void assert(bool);
 void lcd_send(bool data_mode /* false:command mode */,
 		const uint8_t *a, int l);
 
-void lcd_tick();
-void lcd_switch();
-static void lcd_sendstuff();
 static void lcd_initsequence();
 static void lcd_bglight();
 
@@ -205,40 +204,7 @@ void lcd_send(bool data_mode /* false:command mode */,
 
 }
 
-static int online = 0;
-static int f = 0;
-void lcd_tick()
-{
-	if (!online)
-		return;
-	lcd_sendstuff();
-}
 
-void lcd_switch()
-{
-	online ^= 1;
-	uint8_t cmd = DISPCTL | D
-		| (online ? E : 0);
-	lcd_send(false, &cmd, 1);
-	int z = f % 5;
-	tim3->ccr1 = (1250 / (z + 1) - 250);
-	f++;
-}
-
-static void lcd_sendstuff()
-{
-	uint8_t dat[] = {
-		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128,
-		1 | 0 | 0 | 0 | 0  | 0  | 0  | 128,
-		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
-		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
-		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
-		1 | 0 | 4 | 8 | 16 | 32 | 0  | 128,
-		1 | 0 | 0 | 0 | 0  | 0  | 0  | 128,
-		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128,
-	};
-	lcd_send(true, dat, sizeof(dat));
-}
 
 static void lcd_bglight()
 {
@@ -252,8 +218,8 @@ static void lcd_bglight()
 
 	rcc->apb1enr.tim3_en = 1;
 	/* Setup tim3 */
-	tim3->arr = 1000; /* auto-reload aka period */
-	tim3->ccr1 = 250; /* duty cycle */
+	tim3->arr = 2550; /* auto-reload aka period */
+	tim3->ccr1 = 0; /* duty cycle */
 	//tim3->cnt = 500;
 	tim3->psc = 8 - 1; /* prescaler */
 	tim3->ccmr.ch1.out.ccs = TIM_CCS_OUT; /* output */
@@ -270,3 +236,47 @@ static void lcd_bglight()
 	tim3->bdtr.moe = 1; /* main output enable */
 	tim3->cr1.cen = 1; /* enable */
 }
+
+#include "f0-rtc.h"
+extern void clock_get(struct rtc_tr *time, struct rtc_dr *date);
+extern const uint8_t *glyph_5x8_lookup(const char c);
+
+void lcd_putc(char c)
+{
+	lcd_send(true, glyph_5x8_lookup(c), 5);
+}
+
+void lcd_bgset(uint8_t b)
+{
+	tim3->ccr1 = b * 10;
+}
+
+void lcd_drawdate()
+{
+	uint8_t pset[] = { SETY | 0, SETX | 0 };
+	lcd_send(false, pset, sizeof(pset));
+	struct rtc_tr time;
+	struct rtc_dr date;
+	clock_get(&time, &date);
+	lcd_putc('0' + date.yt);
+	lcd_putc('0' + date.yu);
+	lcd_putc('-');
+	lcd_putc('0' + date.mt);
+	lcd_putc('0' + date.mu);
+	lcd_putc('-');
+	lcd_putc('0' + date.dt);
+	lcd_putc('0' + date.du);
+
+	uint8_t u[4] = { 0 };
+	lcd_send(true, u, sizeof(u)); /* shorter space */
+
+	lcd_putc('0' + time.ht + (time.pm == RTC_PM_PM));
+	lcd_putc('0' + time.hu);
+	lcd_putc(':');
+	lcd_putc('0' + time.mnt);
+	lcd_putc('0' + time.mnu);
+	lcd_putc(':');
+	lcd_putc('0' + time.st);
+	lcd_putc('0' + time.su);
+}
+

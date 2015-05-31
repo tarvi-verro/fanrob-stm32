@@ -1,3 +1,6 @@
 *.o
 prg
 *.d
+.aux
+scripts/font-tiny.h
+scripts/font-conv

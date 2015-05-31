@@ -1,13 +1,16 @@
 
+HOSTCC:=gcc
+
 CC:=arm-none-eabi-gcc
 AR:=arm-none-eabi-ar
 LD:=arm-none-eabi-ld
 
 all: prg
 
-SRC:=main.c early.S early_reset.c lcd-com.c
+SRC:=main.c early.S early_reset.c lcd-com.c font-lookup.c clock.c
 OBJ:=$(patsubst %.c, %.o, $(filter %.c, $(SRC))) \
-	$(patsubst %.S, %.o, $(filter %.S, $(SRC)))
+	$(patsubst %.S, %.o, $(filter %.S, $(SRC))) \
+	font-bin.o
 
 # Makes the .d header dependency connections
 MKDEP = printf $*.d\ > $@; $(CC) -MM -MG $(CFLAGS) "$*.c" >> $@
@@ -28,6 +31,11 @@ LDFLAGS:=$(LDFLAGS) -Bstatic -lgcc --specs=nosys.specs -mcpu=cortex-m0 \
 	@$(MKDEP)
 
 -include $(patsubst %.c, %.d, $(filter %.c, $(SRC)))
+
+include font-cc.mk
+
+.aux:
+	@mkdir .aux
 
 prg: $(OBJ) linker.ld
 	$(CC) $(LDFLAGS) $(CFLAGS) $(OBJ) -T linker.ld -o $@

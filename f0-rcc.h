@@ -31,9 +31,27 @@ struct rcc_apb2enr {
 
 struct rcc_apb1enr {
 	uint32_t : 1, tim3_en : 1, : 2, tim6_en : 1, tim7_en : 1, : 2,
-		 wwdg_en : 1, : 2, spi2_en : 1, : 2, usart2_en : 1,
-		 usart3_en : 1, usart4_en : 1, usart5_en : 1, i2c1_en : 1,
-		 i2c2_en : 1, usb_en : 1, : 4, pwr_en : 1, : 3;
+		 tim14_en : 1, : 2, wwdg_en : 1, : 2, spi2_en : 1, : 2,
+		 usart2_en : 1, usart3_en : 1, usart4_en : 1, usart5_en : 1,
+		 i2c1_en : 1, i2c2_en : 1, usb_en : 1, : 4, pwr_en : 1, : 3;
+};
+
+
+enum {
+	RCC_RTCSEL_NONE,
+	RCC_RTCSEL_LSE,
+	RCC_RTCSEL_LSI,
+	RCC_RTCSEL_HSE,
+};
+struct rcc_bdcr {
+	uint32_t lseon : 1, lserdy : 1, lsebyp : 1, lsedrv : 2, : 3,
+		 rtcsel : 2, : 5, rtc_en : 1, bdrst : 1, : 15;
+};
+
+struct rcc_csr {
+	uint32_t lsion : 1, lsirdy : 1, : 21, v18pwr_rstf : 1, rmvf : 1,
+		 obl_rstf : 1, pin_rstf : 1, por_rstf : 1, sft_rstf : 1,
+		 iwdg_rstf : 1, wwdg_rstf : 1, lpwr_rstf : 1;
 };
 
 struct rcc_reg {
@@ -45,8 +63,8 @@ struct rcc_reg {
 	struct rcc_ahbenr ahbenr;
 	struct rcc_apb2enr apb2enr;
 	struct rcc_apb1enr apb1enr;
-	uint32_t bdcr;
-	uint32_t csr;
+	struct rcc_bdcr bdcr;
+	struct rcc_csr csr;
 	uint32_t ahbrstr;
 	uint32_t cfgr2;
 	uint32_t cfgr3;

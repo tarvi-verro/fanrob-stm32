@@ -7,12 +7,19 @@
 
 void assert(bool);
 
+#define lcd 1
+#ifdef lcd
+extern void setup_lcd(void);
 extern void lcd_send(bool data_mode /* false:command mode */,
 		const uint8_t *a, int l);
+extern void lcd_drawdate();
+extern void lcd_bgset(uint8_t b);
+#endif
 
-extern void setup_lcd(void);
-extern void lcd_tick();
-extern void lcd_switch();
+#define clock 1
+#ifdef clock
+extern void setup_clock(void);
+#endif
 
 void setup_usrbtn(void)
 {
@@ -94,7 +101,12 @@ int main(void)
 {
 	setup_leds();
 	setup_usrbtn();
+#ifdef clock
+	setup_clock();
+#endif
+#ifdef lcd
 	setup_lcd();
+#endif
 
 	unsigned int z = 1;
 	unsigned int a;
@@ -106,10 +118,28 @@ int main(void)
 		if (somec) {
 			somec--;
 			if (!somec) {
-				lcd_switch();
+				/* button event handling code */
+				static int a = 0;
+				a++;
+				switch (a % 4) {
+				case 0:
+					lcd_bgset(0);
+					break;
+				case 1:
+					lcd_bgset(16);
+					break;
+				case 2:
+					lcd_bgset(80);
+					break;
+				case 3:
+					lcd_bgset(255);
+					break;
+				}
 			}
 		}
-		lcd_tick();
+
+		lcd_drawdate();
+
 		if (io_green->odr.pin_green)
 			io_blue->odr.pin_blue ^= 1;
 	}
