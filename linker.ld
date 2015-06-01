@@ -44,7 +44,15 @@ SECTIONS {
 		__bss_end__ = .;
 	} > RAM
 
-	_data_lma = LOADADDR(.data);
+	/*_data_lma = LOADADDR(.data); */
+
+	.data_loadfrom : {
+		. = ALIGN(4);
+		_data_lma = .;
+		*(.data*)
+		. = ALIGN(4);
+	} > FLASH
+
 	.data : {
 		. = ALIGN(4);
 		_data_vma_s = .;

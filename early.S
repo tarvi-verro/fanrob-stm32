@@ -7,9 +7,6 @@
 .global  Default_Handler
 .global vecs
 
-.word _data_lma
-.word _data_vma_s
-.word _data_vma_e
 
 .section .text.Reset_Handler
 .weak Reset_Handler
@@ -27,7 +24,7 @@ CpyDat:
 	adds	r1, r1, #4
 	adds	r3, r3, #4
 	cmp	r2, r3
-	bcc	CpyDat
+	bhi	CpyDat
 /*
 	extern uint8_t __bss_start__, __bss_end__; */
 /* null the bss */
