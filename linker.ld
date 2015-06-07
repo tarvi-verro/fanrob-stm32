@@ -44,22 +44,15 @@ SECTIONS {
 		__bss_end__ = .;
 	} > RAM
 
-	/*_data_lma = LOADADDR(.data); */
-
-	.data_loadfrom : {
-		. = ALIGN(4);
-		_data_lma = .;
-		*(.data*)
-		. = ALIGN(4);
-	} > FLASH
-
 	.data : {
 		. = ALIGN(4);
 		_data_vma_s = .;
 		*(.data*)
 		. = ALIGN(4);
 		_data_vma_e = .;
-	} > RAM
+	} > RAM AT > FLASH
+
+	_data_lma = LOADADDR(.data);
 
 	.init_array : {
 		. = ALIGN(4);

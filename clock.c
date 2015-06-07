@@ -6,6 +6,7 @@ extern void assert(bool);
 #include "f0-rtc.h"
 #include "f0-rcc.h"
 #include "f0-pwr.h"
+#include "clock.h"
 
 void setup_clock(void)
 {

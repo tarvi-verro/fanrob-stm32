@@ -46,10 +46,20 @@ NoNull:
 .size Reset_Handler, .-Reset_Handler
 
 .section .text.Default_Handler,"ax",%progbits
+.weak Default_Handler
+.type Default_Handler, %function
 Default_Handler:
 Infinite_Loop:
-	b  Infinite_Loop
-	.size Default_Handler, .-Default_Handler
+	movs	r0, #0
+	bl	assert
+	b	Infinite_Loop
+.weak Hardfault_Handler
+.type Hardfault_Handler, %function
+Hardfault_Handler:
+	movs	r0, #0
+	bl	assert
+	b Hardfault_Handler
+.size Default_Handler, .-Default_Handler
 
 // see 91010 memory registers @ 169
 .section .vec_table,"a",%progbits
@@ -58,7 +68,7 @@ vecs:
 	.word _estack		// 0x00, reserved
 	.word Reset_Handler	// 0x04, reset handler
 	.word undef_interr	// 0x08, NMI
-	.word Default_Handler	// 0x0C, hardfault
+	.word Hardfault_Handler	// 0x0C, hardfault
 	.word 0			// 0x10
 	.word 0			// 0x14
 	.word 0			// 0x18
@@ -78,7 +88,7 @@ vecs:
 	.word undef_interr	// 0x50, RCC global
 	.word nvic_exti_0_1	// 0x54, EXTI_0_1
 	.word undef_interr	// 0x58, EXTI_2_3
-	.word undef_interr	// 0x5C, EXTI_4_15
+	.word kbd_exti_4_15	// 0x5C, EXTI_4_15
 	.word 0			// 0x60, reserved
 	.word undef_interr	// 0x64, DMA_CH1
 	.word undef_interr	// 0x68, DMA_CH2_3

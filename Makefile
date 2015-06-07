@@ -7,7 +7,8 @@ LD:=arm-none-eabi-ld
 
 all: prg
 
-SRC:=main.c early.S early_reset.c lcd-com.c font-lookup.c clock.c
+SRC:=main.c early.S early_reset.c lcd-com.c font-lookup.c clock.c app-info.c \
+	app.c app-menu.c app-exposure.c kbd.c
 OBJ:=$(patsubst %.c, %.o, $(filter %.c, $(SRC))) \
 	$(patsubst %.S, %.o, $(filter %.S, $(SRC))) \
 	font-bin.o

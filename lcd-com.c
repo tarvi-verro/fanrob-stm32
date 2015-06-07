@@ -18,15 +18,10 @@
 #define E	(1 << 0)
 #define SETY	(1 << 6)
 #define SETX	(1 << 7)
-#define WIDTH	84
-#define HEIGHT	48
 
-extern void PCD8544_Init(unsigned char contrast);
+#include "lcd-com.h"
 
 extern void assert(bool);
-
-void lcd_send(bool data_mode /* false:command mode */,
-		const uint8_t *a, int l);
 
 static void lcd_initsequence();
 static void lcd_bglight();
@@ -156,17 +151,27 @@ static void lcd_initsequence()
 		DISPCTL | D, /* normal mode */
 	};
 	lcd_send(false, cmd, sizeof(cmd));
+	lcd_clear();
+}
+
+void lcd_repeat(uint8_t x, int n)
+{
+	assert(n > 0 && n <= (LCD_WIDTH*LCD_HEIGHT/8)); /* sanity check */
 	/* Clear all of lcd with some magic */
 	io_lcd->bsrr.set.pin_lcd_dc = 1; /* data */
 	dma->ch_lcd.ccr.minc = 0; /* no memory increment */
-	uint8_t zero = 0; /* send this over and over again */
-	dma->ch_lcd.ma = (uint32_t) &zero;
-	dma->ch_lcd.ndt = (WIDTH*HEIGHT/8); /* this many times */
+	dma->ch_lcd.ma = (uint32_t) &x; /* send this over and over again */
+	dma->ch_lcd.ndt = n; /* this many times */
 
 	dma->ch_lcd.ccr.en = 1;
 	while (dma->ch_lcd.ndt);
 	dma->ch_lcd.ccr.en = 0;
 	dma->ch_lcd.ccr.minc = 1; /* reset correct setting */
+}
+
+void lcd_clear()
+{
+	lcd_repeat(0, (LCD_WIDTH*LCD_HEIGHT/8));
 }
 
 void lcd_send(bool data_mode /* false:command mode */,
@@ -237,8 +242,6 @@ static void lcd_bglight()
 	tim3->cr1.cen = 1; /* enable */
 }
 
-#include "f0-rtc.h"
-extern void clock_get(struct rtc_tr *time, struct rtc_dr *date);
 extern const uint8_t *glyph_5x8_lookup(const char c);
 
 void lcd_putc(char c)
@@ -251,32 +254,18 @@ void lcd_bgset(uint8_t b)
 	tim3->ccr1 = b * 10;
 }
 
-void lcd_drawdate()
+void lcd_setcaret(int x, int y)
 {
-	uint8_t pset[] = { SETY | 0, SETX | 0 };
+	assert(x >= 0 && x < LCD_WIDTH);
+	assert(y >= 0 && y < (LCD_HEIGHT/8));
+	uint8_t pset[] = { SETY | y, SETX | x };
 	lcd_send(false, pset, sizeof(pset));
-	struct rtc_tr time;
-	struct rtc_dr date;
-	clock_get(&time, &date);
-	lcd_putc('0' + date.yt);
-	lcd_putc('0' + date.yu);
-	lcd_putc('-');
-	lcd_putc('0' + date.mt);
-	lcd_putc('0' + date.mu);
-	lcd_putc('-');
-	lcd_putc('0' + date.dt);
-	lcd_putc('0' + date.du);
+}
 
-	uint8_t u[4] = { 0 };
-	lcd_send(true, u, sizeof(u)); /* shorter space */
-
-	lcd_putc('0' + time.ht + (time.pm == RTC_PM_PM));
-	lcd_putc('0' + time.hu);
-	lcd_putc(':');
-	lcd_putc('0' + time.mnt);
-	lcd_putc('0' + time.mnu);
-	lcd_putc(':');
-	lcd_putc('0' + time.st);
-	lcd_putc('0' + time.su);
+void lcd_puts(const char *msg)
+{
+	for (; *msg != '\0'; msg++) {
+		lcd_putc(*msg);
+	}
 }
 
