@@ -2,9 +2,13 @@
 #include "lcd-com.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include "clock.h"
+#include "camsig.h"
 
 extern void assert(bool);
 
+int expo_active = 0;
+static int expo_active_t;
 static int expo_sec = 342;
 static int expo_delay = 2;
 static int expo_n = 1;
@@ -25,6 +29,69 @@ _Static_assert(CONF_MAX <= LCD_HEIGHT/8,
 
 static int focus = CONF_TIME;
 
+static struct rtc_alrmar alrm_a[2];
+
+static struct rtc_alrmar alarm_smh_from_sec(int sec)
+{
+	struct rtc_alrmar a;
+	a.su = (sec % 60) % 10;
+	a.st = (sec % 60) / 10;
+	a.mnu = ((sec / 60) % 60) % 10;
+	a.mnt = ((sec / 60) % 60) / 10;
+	a.hu = ((sec / (60*60) % 24) % 10);
+	a.ht = ((sec/ (60*60) % 24) / 10);
+	a.pm = 0;
+	a.msk4 = 1; /* don't care about date */
+	return a;
+}
+
+static void exposure_callback();
+
+static void exposure_program(int current_sec)
+{
+	uint32_t *n = (uint32_t *) alrm_a;
+	n[0] = 0;
+	n[1] = 0;
+	int start = current_sec + expo_delay;
+	int end = start + expo_sec;
+
+	alrm_a[0] = alarm_smh_from_sec(start);
+	alrm_a[1] = alarm_smh_from_sec(end);
+	clock_alarm(alrm_a[0], exposure_callback);
+	expo_active++;
+}
+
+static void exposure_callback()
+{
+	if (expo_active & 1) {
+		camsig_set(1);
+		expo_active++;
+		clock_alarm(alrm_a[1], exposure_callback);
+		return;
+	}
+	camsig_set(0);
+	if ((expo_active / 2) >= expo_n) {
+		expo_active = 0;
+		clock_alarm_stop(exposure_callback);
+		return;
+	}
+	expo_active_t += expo_delay + expo_sec;
+	exposure_program(expo_active_t);
+}
+
+static void exposure_start()
+{
+	struct rtc_tr time;
+	struct rtc_dr date;
+	clock_get(&time, &date);
+	int sec = time.su + time.st * 10
+		+ (time.mnu + time.mnt * 10) * 60
+		+ (time.hu + time.ht * 10) * 60 * 60;
+
+	expo_active_t = sec;
+	expo_active = 0;
+	exposure_program(sec);
+}
 
 static int decimal_length(int i)
 {
@@ -106,6 +173,15 @@ static void upd_conf(enum conf_id cnf)
 		lcd_putc(' ');
 		print_decimal(expo_n, xn);
 		break;
+	case CONF_START:
+		if (!expo_active) {
+			lcd_setcaret(LCD_WIDTH - 3 - 7*5, CONF_START);
+			lcd_puts("start >");
+		} else {
+			lcd_setcaret(LCD_WIDTH - 3 - 7*5, CONF_START);
+			lcd_puts(" < stop");
+		}
+		break;
 	default:
 		assert(false);
 	};
@@ -128,8 +204,7 @@ static void drw_conf()
 	lcd_puts("n:");
 	upd_conf(CONF_N);
 
-	lcd_setcaret(LCD_WIDTH - 3 - 7*5, CONF_START);
-	lcd_puts("start >");
+	upd_conf(CONF_START);
 
 	lcd_setcaret(2, CONF_BACK);
 	lcd_puts("< back");
@@ -145,6 +220,11 @@ static void sel()
 
 static void rm()
 {
+	if (expo_active) {
+		expo_active = 0;
+		clock_alarm_stop(exposure_callback);
+		camsig_set(0);
+	}
 	app_update = NULL;
 }
 
@@ -214,6 +294,15 @@ static void ev(enum ev_type type, enum ev_key key)
 		app_pop();
 		break;
 	case CONF_START:
+		if (!expo_active && key == EV_KEY_RIGHT) {
+			exposure_start();
+			upd_conf(CONF_START);
+		} else if (expo_active && key == EV_KEY_LEFT) {
+			expo_active = 0;
+			clock_alarm_stop(exposure_callback);
+			camsig_set(0);
+			upd_conf(CONF_START);
+		}
 		break;
 	default:;
 		if (key != EV_KEY_LEFT && key != EV_KEY_RIGHT)
@@ -230,3 +319,4 @@ struct app app_exposure = {
 	.event = ev,
 	.previous = NULL,
 };
+

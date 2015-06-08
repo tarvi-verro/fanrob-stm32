@@ -13,6 +13,11 @@
 #define iop_user_en iopa_en
 #define pin_user pin0
 
+/* output signal to camera */
+#define io_camsig gpio_reg_c
+#define iop_camsig_en iopc_en
+#define pin_camsig pin13
+
 /* keybd; this is more hardcoded than it impresses */
 #define io_kbd gpio_reg_c
 #define iop_kbd_en iopc_en

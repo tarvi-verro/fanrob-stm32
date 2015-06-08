@@ -6,6 +6,7 @@
 #include "conf.h"
 #include "app.h"
 #include "kbd.h"
+#include "camsig.h"
 
 void assert(bool);
 
@@ -116,6 +117,7 @@ int main(void)
 	app_push(&app_info);
 #endif
 	setup_kbd();
+	setup_camsig();
 
 	lcd_bgset(255);
 

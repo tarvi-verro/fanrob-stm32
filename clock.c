@@ -8,6 +8,32 @@ extern void assert(bool);
 #include "f0-pwr.h"
 #include "clock.h"
 
+void clock_alarm(struct rtc_alrmar alrm, void (*cb)())
+{
+	// TODO
+}
+
+void clock_alarm_stop(void (*cb)())
+{
+	// TODO
+}
+
+void clock_set(struct rtc_tr time, struct rtc_dr date)
+{
+	rtc->wpr.key = 0xca; /* unlock write protection */
+	rtc->wpr.key = 0x53;
+
+	rtc->isr.init = 1;
+	while (!rtc->isr.initf); /* wait for init mode */
+
+	rtc->tr = time;
+	rtc->dr = date;
+
+	rtc->isr.init = 0;
+	rtc->wpr.key = 0x11; /* relock write protection */
+	while (!rtc->isr.rsf);
+}
+
 void setup_clock(void)
 {
 	rcc->apb1enr.pwr_en = 1;
@@ -51,10 +77,11 @@ void setup_clock(void)
 	};
 	rtc->dr = b;
 
-	rtc->cr.fmt = RTC_FMT_12H;
+	rtc->cr.fmt = RTC_FMT_24H;
 
 	rtc->isr.init = 0;
 	rtc->wpr.key = 0xff; /* random key write enables protection again */
+	while (!rtc->isr.rsf);
 }
 
 void clock_get(struct rtc_tr *time, struct rtc_dr *date)
