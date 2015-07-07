@@ -16,12 +16,12 @@
 /* output signal to camera */
 #define io_camsig gpio_reg_c
 #define iop_camsig_en iopc_en
-#define pin_camsig pin13
+#define pin_camsig pin3
 
 /* keybd; this is more hardcoded than it impresses */
 #define io_kbd gpio_reg_c
 #define iop_kbd_en iopc_en
-#define pin_up pin14
+#define pin_up pin14 /* TODO: pins used for x3, select another */
 #define pin_down pin15
 #define pin_left pin4
 #define pin_right pin5

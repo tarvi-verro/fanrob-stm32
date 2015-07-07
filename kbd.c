@@ -3,6 +3,7 @@
 #include "f0-rcc.h"
 #include "f0-gpio.h"
 #include "f0-syscfg.h"
+#include "lcd-com.h" /* bgset */
 #include <stdbool.h>
 #include "app.h"
 extern struct app *app_top;
@@ -14,6 +15,10 @@ static uint8_t key_changes = 0;
 static uint8_t key_spampt = 0;
 static void kbd_tick_event(enum ev_key key, int now);
 
+static uint8_t cmb_active = 0;
+static int cmb_bgval = 20;
+#define BGVAL_MUL 4
+
 #define MSK_UP 0x3
 #define MSK_DOWN 0xC
 #define MSK_LEFT 0x30
@@ -21,6 +26,18 @@ static void kbd_tick_event(enum ev_key key, int now);
 
 void kbd_tick_slow()
 {
+	if (cmb_active) {
+		if (cmb_active == 1) {
+			cmb_bgval--;
+			if (cmb_bgval < 0)
+				cmb_bgval = 0;
+		} else {
+			cmb_bgval++;
+			if (cmb_bgval > 255 * BGVAL_MUL)
+				cmb_bgval = 255 * BGVAL_MUL;
+		}
+		lcd_bgset(cmb_bgval/BGVAL_MUL);
+	}
 	if (!key_spampt)
 		return;
 	int i;
@@ -41,6 +58,14 @@ void kbd_tick_slow()
 	}
 }
 
+static void kbd_cmb(enum ev_type type, enum ev_key key)
+{
+	if (type == EV_TYPE_PRESS)
+		cmb_active = (key == EV_KEY_LEFT) ? 1 : 2;
+	else
+		cmb_active = 0;
+}
+
 static void kbd_tick_event(enum ev_key key, int now)
 {
 	bool edge = !(now & key);
@@ -48,7 +73,12 @@ static void kbd_tick_event(enum ev_key key, int now)
 //		app_top->event(!edge, key); /* these generate a lot of noise */
 //		app_top->event(edge, key);
 	} else {
-		app_top->event(edge, key);
+		if ((key == EV_KEY_LEFT || key == EV_KEY_RIGHT)
+				&& (now & EV_KEY_DOWN) == EV_KEY_DOWN) {
+			kbd_cmb(edge, key);
+		} else {
+			app_top->event(edge, key);
+		}
 		key_states_last ^= key;
 
 	}
@@ -117,6 +147,7 @@ void kbd_exti_4_15(void)
 
 void setup_kbd()
 {
+	lcd_bgset(20);
 	rcc->ahbenr.iop_kbd_en = 1;
 	io_kbd->moder.pin_up = GPIO_MODER_IN;
 	io_kbd->pupdr.pin_down = GPIO_MODER_IN;

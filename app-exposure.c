@@ -9,9 +9,10 @@ extern void assert(bool);
 
 int expo_active = 0;
 static int expo_active_t;
-static int expo_sec = 342;
+static int expo_sec = 3;
 static int expo_delay = 2;
 static int expo_n = 1;
+static int expo_ended = 0; /* written to 1 when expo over, upd screen */
 //static int expo_fract = 120; /* TODO: subseconds */
 /* TODO: start exposure */
 
@@ -29,11 +30,11 @@ _Static_assert(CONF_MAX <= LCD_HEIGHT/8,
 
 static int focus = CONF_TIME;
 
-static struct rtc_alrmar alrm_a[2];
+static struct rtc_alrmar alrm_a[2] = { 0 };
 
 static struct rtc_alrmar alarm_smh_from_sec(int sec)
 {
-	struct rtc_alrmar a;
+	struct rtc_alrmar a = { 0 };
 	a.su = (sec % 60) % 10;
 	a.st = (sec % 60) / 10;
 	a.mnu = ((sec / 60) % 60) % 10;
@@ -72,6 +73,7 @@ static void exposure_callback()
 	camsig_set(0);
 	if ((expo_active / 2) >= expo_n) {
 		expo_active = 0;
+		expo_ended = 1;
 		clock_alarm_stop(exposure_callback);
 		return;
 	}
@@ -135,8 +137,13 @@ static void conf_offset(enum conf_id cfg, int off);
 
 static int velocity = 0;
 static enum ev_key fastdirection = 0;
+static void upd_conf(enum conf_id cnf);
 static void app_upd()
 {
+	if (expo_ended) {
+		expo_ended = 0;
+		upd_conf(CONF_START);
+	}
 	if (!fastdirection)
 		return;
 	velocity++;

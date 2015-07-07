@@ -83,12 +83,12 @@ vecs:
 	.word undef_interr	// 0x3C, systick
 	.word undef_interr	// 0x40, WWDG
 	.word 0			// 0x44, reserved
-	.word undef_interr	// 0x48, RTC interrupts
+	.word clock_exti_rtc	// 0x48, RTC interrupts		1 << 2
 	.word undef_interr	// 0x4C, flash global interr
 	.word undef_interr	// 0x50, RCC global
-	.word nvic_exti_0_1	// 0x54, EXTI_0_1
+	.word nvic_exti_0_1	// 0x54, EXTI_0_1		1 << 5
 	.word undef_interr	// 0x58, EXTI_2_3
-	.word kbd_exti_4_15	// 0x5C, EXTI_4_15
+	.word kbd_exti_4_15	// 0x5C, EXTI_4_15		1 << 7
 	.word 0			// 0x60, reserved
 	.word undef_interr	// 0x64, DMA_CH1
 	.word undef_interr	// 0x68, DMA_CH2_3

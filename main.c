@@ -64,8 +64,8 @@ void setup_leds(void)
 	io_green->otyper.pin_green = GPIO_OTYPER_PP;
 	io_blue->otyper.pin_blue = GPIO_OTYPER_PP;
 
-	io_green->bsrr.set.pin_green = 1;
-	io_blue->bsrr.set.pin_blue = 1;
+	io_green->bsrr.reset.pin_green = 1;
+	io_blue->bsrr.reset.pin_blue = 1;
 }
 
 static int somec = 0;
@@ -119,8 +119,6 @@ int main(void)
 	setup_kbd();
 	setup_camsig();
 
-	lcd_bgset(255);
-
 	unsigned int z = 1;
 	unsigned int a;
 	while (1) {
@@ -136,22 +134,6 @@ int main(void)
 			somec--;
 			if (!somec) {
 				/* usr button event handling code */
-				static int a = 0;
-				a++;
-				switch (a % 4) {
-				case 0:
-					lcd_bgset(0);
-					break;
-				case 1:
-					lcd_bgset(16);
-					break;
-				case 2:
-					lcd_bgset(80);
-					break;
-				case 3:
-					lcd_bgset(255);
-					break;
-				}
 			}
 		}
 

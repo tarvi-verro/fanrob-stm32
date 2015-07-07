@@ -20,6 +20,12 @@ enum {
 	RTC_FMT_24H,
 	RTC_FMT_12H,
 };
+enum {
+	RTC_OSEL_DISABLED,
+	RTC_OSEL_ALARM_A,
+	/* 2 reserved */
+	RTC_OSEL_WAKEUP = 3,
+};
 struct rtc_cr {
 	uint32_t wucksel : 3, tsedge : 1, refckon : 1, bypshad : 1, fmt : 1,
 		 : 1, alrae : 1, : 1, wute : 1, tse : 1, alraie : 1, : 1,
@@ -42,7 +48,7 @@ struct rtc_wutr {
 };
 
 struct rtc_alrmar {
-	uint32_t su : 4, st, : 3, msk1 : 1, mnu : 4, mnt : 3, msk2 : 1, hu : 4,
+	uint32_t su : 4, st : 3, msk1 : 1, mnu : 4, mnt : 3, msk2 : 1, hu : 4,
 		 ht : 2, pm : 1, msk3 : 1, du : 4, dt : 2, wdsel : 1, msk4 : 1;
 };
 
@@ -93,7 +99,9 @@ struct rtc_reg {
 	struct rtc_isr isr;
 	struct rtc_prer prer;
 	struct rtc_wutr wutr;
+	uint32_t _pad0;
 	struct rtc_alrmar alrmar;
+	uint32_t _pad1;
 	struct rtc_wpr wpr;
 	struct rtc_ssr ssr;
 	struct rtc_shiftr shiftr;
