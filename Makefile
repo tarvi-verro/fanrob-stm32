@@ -29,9 +29,10 @@ CFLAGS:=$(CFLAGS) -g3 -O0 -mthumb -mcpu=cortex-m0 -fno-stack-protector \
 
 ASFLAGS:= -g3 -mthumb -mcpu=cortex-m0 -EL
 
-LDFLAGS:=$(LDFLAGS) -lgcc -lc -lnosys \
-	-L/usr/lib/gcc/arm-none-eabi/5.1.0/armv6-m \
-	-L/usr/arm-none-eabi/lib/armv6-m
+LDFLAGS:=$(LDFLAGS) \
+	-L/usr/lib/gcc/arm-none-eabi/5.2.0/armv6-m \
+	-L/usr/arm-none-eabi/lib/armv6-m \
+	-lgcc -lc -lnosys
 
 $O:
 	@mkdir $O

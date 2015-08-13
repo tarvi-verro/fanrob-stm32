@@ -29,12 +29,12 @@
 /* lcd stuff */
 #define io_lcd gpio_reg_a
 #define pin_lcd_vdd pin1
-#define pin_lcd_dc pin3
 #define pin_lcd_res pin2
-#define pin_lcd_mosi pin7
-#define pin_lcd_sck pin5
+#define pin_lcd_dc pin3
 #define pin_lcd_nss pin4
+#define pin_lcd_sck pin5
 #define pin_lcd_bg pin6
+#define pin_lcd_mosi pin7
 
 #define spi_lcd spi1_reg
 #define ch_lcd ch3 /* CH3 connects to spi1-tx */

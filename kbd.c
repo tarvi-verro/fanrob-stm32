@@ -113,7 +113,7 @@ void kbd_exti_4_15(void)
 {
 	if (exti->pr.pr14) { /* pin_up */
 		exti->pr.pr14 = 1;
-		if (io_kbd->idr.pin_up)
+		if (!io_kbd->idr.pin_up)
 			key_states_now |= EV_KEY_UP;
 		else
 			key_states_now &= ~(EV_KEY_UP);
@@ -121,7 +121,7 @@ void kbd_exti_4_15(void)
 	}
 	if (exti->pr.pr15) { /* pin_down */
 		exti->pr.pr15 = 1;
-		if (io_kbd->idr.pin_down)
+		if (!io_kbd->idr.pin_down)
 			key_states_now |= EV_KEY_DOWN;
 		else
 			key_states_now &= ~(EV_KEY_DOWN);
@@ -129,7 +129,7 @@ void kbd_exti_4_15(void)
 	}
 	if (exti->pr.pr4) { /* pin_left */
 		exti->pr.pr4 = 1;
-		if (io_kbd->idr.pin_left)
+		if (!io_kbd->idr.pin_left)
 			key_states_now |= EV_KEY_LEFT;
 		else
 			key_states_now &= ~(EV_KEY_LEFT);
@@ -137,7 +137,7 @@ void kbd_exti_4_15(void)
 	}
 	if (exti->pr.pr5) { /* pin_right */
 		exti->pr.pr5 = 1;
-		if (io_kbd->idr.pin_right)
+		if (!io_kbd->idr.pin_right)
 			key_states_now |= EV_KEY_RIGHT;
 		else
 			key_states_now &= ~(EV_KEY_RIGHT);
