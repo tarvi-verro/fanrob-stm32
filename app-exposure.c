@@ -147,12 +147,12 @@ static void app_upd()
 	if (!fastdirection)
 		return;
 	velocity++;
-	if (velocity <= 10)
+	if (velocity <= 7)
 		return;
 	if (fastdirection == EV_KEY_RIGHT)
-		conf_offset(focus, (velocity - 10));
+		conf_offset(focus, (velocity - 7));
 	else
-		conf_offset(focus, -(velocity - 10));
+		conf_offset(focus, -(velocity - 7));
 }
 
 static void upd_conf(enum conf_id cnf)
