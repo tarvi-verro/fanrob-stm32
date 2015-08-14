@@ -16,13 +16,19 @@ static uint8_t key_spampt = 0;
 static void kbd_tick_event(enum ev_key key, int now);
 
 static uint8_t cmb_active = 0;
-static int cmb_bgval = 20;
+static int cmb_bgval = 100;
 #define BGVAL_MUL 4
 
 #define MSK_UP 0x3
 #define MSK_DOWN 0xC
 #define MSK_LEFT 0x30
 #define MSK_RIGHT 0xC0
+
+static void cmb_bgval_upload()
+{
+	lcd_bgset((uint8_t) (cmb_bgval*cmb_bgval
+				*(1.f/(255.f*BGVAL_MUL*BGVAL_MUL))));
+}
 
 void kbd_tick_slow()
 {
@@ -36,7 +42,7 @@ void kbd_tick_slow()
 			if (cmb_bgval > 255 * BGVAL_MUL)
 				cmb_bgval = 255 * BGVAL_MUL;
 		}
-		lcd_bgset(cmb_bgval/BGVAL_MUL);
+		cmb_bgval_upload();
 	}
 	if (!key_spampt)
 		return;
@@ -147,7 +153,7 @@ void kbd_exti_4_15(void)
 
 void setup_kbd()
 {
-	lcd_bgset(20);
+	cmb_bgval_upload();
 	rcc->ahbenr.iop_kbd_en = 1;
 	io_kbd->moder.pin_up = GPIO_MODER_IN;
 	io_kbd->pupdr.pin_down = GPIO_MODER_IN;

@@ -7,12 +7,13 @@
 
 extern void assert(bool);
 
-int expo_active = 0;
+static int expo_active = 0;
 static int expo_active_t;
 static int expo_sec = 3;
 static int expo_delay = 2;
 static int expo_n = 1;
 static int expo_ended = 0; /* written to 1 when expo over, upd screen */
+static int expo_back = 0;
 //static int expo_fract = 120; /* TODO: subseconds */
 /* TODO: start exposure */
 
@@ -28,6 +29,7 @@ enum conf_id {
 _Static_assert(CONF_MAX <= LCD_HEIGHT/8,
 		"Too many lines in exposure conf screen.");
 
+static void upd_conf(enum conf_id cnf, bool full);
 static int focus = CONF_TIME;
 
 static struct rtc_alrmar alrm_a[2] = { 0 };
@@ -68,6 +70,7 @@ static void exposure_callback()
 		camsig_set(1);
 		expo_active++;
 		clock_alarm(alrm_a[1], exposure_callback);
+		upd_conf(CONF_START, false);
 		return;
 	}
 	camsig_set(0);
@@ -79,6 +82,7 @@ static void exposure_callback()
 	}
 	expo_active_t += expo_delay + expo_sec;
 	exposure_program(expo_active_t);
+	upd_conf(CONF_START, false);
 }
 
 static void exposure_start()
@@ -137,12 +141,13 @@ static void conf_offset(enum conf_id cfg, int off);
 
 static int velocity = 0;
 static enum ev_key fastdirection = 0;
-static void upd_conf(enum conf_id cnf);
 static void app_upd()
 {
 	if (expo_ended) {
 		expo_ended = 0;
-		upd_conf(CONF_START);
+		upd_conf(CONF_START, true);
+		upd_conf(CONF_TITLE, true);
+		upd_conf(CONF_BACK, true);
 	}
 	if (!fastdirection)
 		return;
@@ -155,9 +160,10 @@ static void app_upd()
 		conf_offset(focus, -(velocity - 7));
 }
 
-static void upd_conf(enum conf_id cnf)
+
+static void upd_conf(enum conf_id cnf, bool full)
 {
-	int xn;
+	int xn, n;
 	switch (cnf) {
 	case CONF_TIME: // format: 30'20"
 		lcd_setcaret(LCD_WIDTH - 3 - (6 * 5), CONF_TIME);
@@ -181,12 +187,49 @@ static void upd_conf(enum conf_id cnf)
 		print_decimal(expo_n, xn);
 		break;
 	case CONF_START:
+		if (full) {
+			lcd_setcaret(2, CONF_START);
+			lcd_repeat(0x0, LCD_WIDTH - 4);
+		}
 		if (!expo_active) {
 			lcd_setcaret(LCD_WIDTH - 3 - 7*5, CONF_START);
 			lcd_puts("start >");
 		} else {
-			lcd_setcaret(LCD_WIDTH - 3 - 7*5, CONF_START);
-			lcd_puts(" < stop");
+			lcd_setcaret(20, CONF_START);
+			char c = expo_active & 1 ? ' ' : '#';
+			lcd_putc(c);
+			lcd_putc(c);
+			lcd_putc(c);
+
+			n = (expo_active - 1) / 2;
+			xn = decimal_length(n);
+			lcd_setcaret(LCD_WIDTH - 3 - ((xn + 1) * 5),
+					CONF_START);
+			lcd_putc(' ');
+			print_decimal(n, xn);
+		}
+		break;
+	case CONF_TITLE:
+		lcd_setcaret(0, CONF_TITLE);
+		if (!expo_active)
+			lcd_puts("take an exposure");
+		else
+			lcd_puts("exposures live..");
+		break;
+	case CONF_BACK:
+		if (full) {
+			lcd_setcaret(2, CONF_BACK);
+			lcd_repeat(0x0, LCD_WIDTH - 4);
+		}
+		if (!expo_active) {
+			lcd_setcaret(2, CONF_BACK);
+			lcd_puts("< back");
+		} else {
+			lcd_setcaret(LCD_WIDTH - 3 - 7*5, CONF_BACK);
+			if (expo_back == 0)
+				lcd_puts(" < stop");
+			else
+				lcd_puts("<< stop");
 		}
 		break;
 	default:
@@ -196,25 +239,23 @@ static void upd_conf(enum conf_id cnf)
 
 static void drw_conf()
 {
-	lcd_setcaret(0, CONF_TITLE);
-	lcd_puts("take an exposure");
+	upd_conf(CONF_TITLE, false);
 
 	lcd_setcaret(2, CONF_TIME);
 	lcd_puts("t:");
-	upd_conf(CONF_TIME);
+	upd_conf(CONF_TIME, false);
 
 	lcd_setcaret(2, CONF_DELAY);
 	lcd_puts("delay:");
-	upd_conf(CONF_DELAY);
+	upd_conf(CONF_DELAY, false);
 
 	lcd_setcaret(2, CONF_N);
 	lcd_puts("n:");
-	upd_conf(CONF_N);
+	upd_conf(CONF_N, false);
 
-	upd_conf(CONF_START);
+	upd_conf(CONF_START, false);
 
-	lcd_setcaret(2, CONF_BACK);
-	lcd_puts("< back");
+	upd_conf(CONF_BACK, false);
 }
 
 static void sel()
@@ -246,7 +287,7 @@ static void conf_offset(enum conf_id cfg, int off)
 			expo_sec = 1;
 		if (expo_sec >= (99 * 60 + 59))
 			expo_sec = (99 * 60 + 59);
-		upd_conf(focus);
+		upd_conf(focus, false);
 		break;
 	case CONF_DELAY:
 		if (expo_delay == 1 && off < 0)
@@ -254,15 +295,17 @@ static void conf_offset(enum conf_id cfg, int off)
 		expo_delay += off;
 		if (expo_delay < 1)
 			expo_delay = 1;
-		upd_conf(focus);
+		upd_conf(focus, false);
 		break;
 	case CONF_N:
 		if (expo_n == 1 && off < 0)
 			break;
 		expo_n += off;
-		if (expo_n < 1)
+		if (!expo_active && expo_n < 1)
 			expo_n = 1;
-		upd_conf(focus);
+		else if (expo_active && expo_n < (expo_active - 1) / 2 + 1)
+			expo_n = (expo_active - 1) / 2 + 1;
+		upd_conf(focus, false);
 		break;
 	default:
 		assert(false);
@@ -283,33 +326,54 @@ static void ev(enum ev_type type, enum ev_key key)
 	if (key == EV_KEY_UP) {
 		int oldfocus = focus;
 		focus--;
-		if (focus < CONF_TIME)
+		if (!expo_active && focus < CONF_TIME)
+			focus = CONF_BACK;
+		else if (expo_active && focus < CONF_N)
 			focus = CONF_BACK;
 		refocus(oldfocus);
+		if (expo_back) {
+			expo_back = 0;
+		       upd_conf(CONF_BACK, false);
+		}
 	} else if (key == EV_KEY_DOWN) {
 		int oldfocus = focus;
 		focus++;
 		if (focus > CONF_BACK)
-			focus = CONF_TIME;
+			focus = expo_active ? CONF_N : CONF_TIME;
 		refocus(oldfocus);
+		if (expo_back) {
+		       expo_back = 0;
+		       upd_conf(CONF_BACK, false);
+		}
 	}
 
 	switch (focus) {
 	case CONF_BACK:
 		if (key != EV_KEY_LEFT)
 			break;
-		app_pop();
+		if (!expo_active) {
+			app_pop();
+			break;
+		} else if (expo_back == 0) {
+			expo_back++;
+			upd_conf(CONF_BACK, false);
+			break;
+		}
+		/* end active expo */
+		expo_active = 0;
+		clock_alarm_stop(exposure_callback);
+		camsig_set(0);
+		upd_conf(CONF_START, true);
+		upd_conf(CONF_TITLE, true);
+		upd_conf(CONF_BACK, true);
 		break;
 	case CONF_START:
-		if (!expo_active && key == EV_KEY_RIGHT) {
-			exposure_start();
-			upd_conf(CONF_START);
-		} else if (expo_active && key == EV_KEY_LEFT) {
-			expo_active = 0;
-			clock_alarm_stop(exposure_callback);
-			camsig_set(0);
-			upd_conf(CONF_START);
-		}
+		if (expo_active || key != EV_KEY_RIGHT)
+			break;
+		exposure_start();
+		upd_conf(CONF_START, true);
+		upd_conf(CONF_TITLE, true);
+		upd_conf(CONF_BACK, true);
 		break;
 	default:;
 		if (key != EV_KEY_LEFT && key != EV_KEY_RIGHT)
