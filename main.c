@@ -7,6 +7,7 @@
 #include "app.h"
 #include "kbd.h"
 #include "camsig.h"
+#include "heater.h"
 
 void assert(bool);
 
@@ -118,6 +119,7 @@ int main(void)
 #endif
 	setup_kbd();
 	setup_camsig();
+	setup_heater();
 
 	unsigned int z = 1;
 	unsigned int a;

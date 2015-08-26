@@ -8,18 +8,23 @@ enum {
 	ITEM_CONF,
 	ITEM_EXPO,
 	ITEM_TLAPSE,
+	ITEM_HEAT,
 	ITEM_SNAKE,
+	ITEM_MAX,
 };
 static const char items[][16 - 2] = {
 	"just info",
 	"configure sys",
 	"single expo",
 	"timelapse",
+	"heater",
 	"snake",
 };
 #define items_length (sizeof(items)/sizeof(items[0]))
 _Static_assert(items_length <= 6,
 		"too many items in menu, make menu scroll or something");
+_Static_assert(items_length == ITEM_MAX,
+		"Update the ITEM_X enum aswell as the items list.");
 
 static void refocus(int oldfocus)
 {
@@ -86,6 +91,8 @@ static void ev(enum ev_type type, enum ev_key key)
 			app_push(&app_exposure);
 		else if (focus == ITEM_CONF)
 			app_push(&app_conf);
+		else if (focus == ITEM_HEAT)
+			app_push(&app_heater);
 		/* to next app */
 	}
 }

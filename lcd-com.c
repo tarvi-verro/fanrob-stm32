@@ -22,6 +22,7 @@
 #include "lcd-com.h"
 
 extern void assert(bool);
+extern void setup_tim3();
 
 static void lcd_initsequence();
 static void lcd_bglight();
@@ -221,25 +222,10 @@ static void lcd_bglight()
 	io_lcd->afr.pin_lcd_bg = 1; /* tim3 ch1 */
 	//io_lcd->bsrr.set.pin_lcd_bg = 1;
 
-	rcc->apb1enr.tim3_en = 1;
-	/* Setup tim3 */
-	tim3->arr = 2550; /* auto-reload aka period */
-	tim3->ccr1 = 0; /* duty cycle */
-	//tim3->cnt = 500;
-	tim3->psc = 8 - 1; /* prescaler */
-	tim3->ccmr.ch1.out.ccs = TIM_CCS_OUT; /* output */
-	tim3->ccmr.ch1.out.ocm = 6; /* 110 -- pwm mode 1 */
-	tim3->ccmr.ch1.out.ocpe = 1; /* preload enable, enables changing ccr1
-					on the fly */
-//	tim3->cr1.arpe = 1; /* auto-preload enable */
-	tim3->cr1.dir = TIM_DIR_UPCNT; /* upcounter */
-//	tim3->ccer.cc1p = 0; /* polarity */
-//	tim3->ccer.cc1ne = 0;
-//	tim3->egr.cc1g = 1; /* capture/compare generation */
-	tim3->egr.ug = 1; /* update generation */
+	setup_tim3();
+
 	tim3->ccer.cc1e = 1;
-	tim3->bdtr.moe = 1; /* main output enable */
-	tim3->cr1.cen = 1; /* enable */
+	tim3->ccr1 = 0; /* duty cycle */
 }
 
 extern const uint8_t *glyph_5x8_lookup(const char c);

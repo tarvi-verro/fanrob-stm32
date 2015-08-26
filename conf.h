@@ -37,7 +37,14 @@
 #define pin_lcd_mosi pin7
 
 #define spi_lcd spi1_reg
-#define ch_lcd ch3 /* CH3 connects to spi1-tx */
+#define ch_lcd ch3 /* DMA CH3 connects to spi1-tx */
+#define ch_lcdbg ch1 /* TIM3 PWM channel */
+
+/* heater wire */
+#define io_heat gpio_reg_c
+#define pin_heat pin7
+
+#define ch_heat ch2 /* TIM3 PWM channel */
 
 struct gpio_reg;
 struct rcc_reg;
