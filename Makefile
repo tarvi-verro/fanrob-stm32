@@ -18,7 +18,8 @@ all: $O/prg
 
 SRC:=main.c early.S early_reset.c lcd-com.c font-lookup.c clock.c app-info.c \
 	app.c app-menu.c app-exposure.c kbd.c camsig.c app-heater.c heater.c \
-	tim3-en.c
+	tim3-en.c decimal.c
+
 OBJ:=$O/font-bin.o \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \
 	$(patsubst %.S, $O/%.o, $(filter %.S, $(SRC)))

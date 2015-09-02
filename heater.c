@@ -9,7 +9,7 @@ void setup_heater()
 {
 	io_heat->moder.pin_heat = GPIO_MODER_AF;
 	io_heat->ospeedr.pin_heat = GPIO_OSPEEDR_MEDIUM;
-	io_heat->otyper.pin_heat = GPIO_OTYPER_PP;
+	io_heat->otyper.pin_heat = GPIO_OTYPER_OD;
 	io_heat->pupdr.pin_heat = GPIO_PUPDR_NONE;
 	io_heat->afr.pin_heat = 0; /* tim3 ch3 */
 

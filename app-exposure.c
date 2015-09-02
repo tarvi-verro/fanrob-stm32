@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include "clock.h"
 #include "camsig.h"
+#include "decimal.h"
 
 extern void assert(bool);
 
@@ -99,29 +100,8 @@ static void exposure_start()
 	exposure_program(sec);
 }
 
-static int decimal_length(int i)
-{
-	assert(i >= 0 && i < 100*1000);
-
-	return 1 + (i >= 10) + (i >= 100) + (i >= 1000) + (i >= 10*1000);
-}
-
-static void print_decimal(int d, int len)
-{
-	assert(len <= 5);
-	if (len >= 5)
-		lcd_putc('0' + (d / 10000) % 10);
-	if (len >= 4)
-		lcd_putc('0' + (d / 1000) % 10);
-	if (len >= 3)
-		lcd_putc('0' + (d / 100) % 10);
-	if (len >= 2)
-		lcd_putc('0' + (d / 10) % 10);
-	lcd_putc('0' + (d % 10));
-}
-
 static void refocus(int oldfocus)
-{
+{ // TODO: duplicated code between app-heater and this
 	uint8_t non[2] = { 0 };
 	lcd_setcaret(0, oldfocus);
 	lcd_send(true, non, 2);
