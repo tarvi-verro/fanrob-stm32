@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "decimal.h"
 #include "lcd-com.h"
+#include "heater.h"
 
 extern void assert(bool);
 
@@ -47,8 +48,8 @@ static void upd_conf(enum conf_id cnf)
 		break;
 	case CONF_STATE:
 		if (heat_online) {
-			lcd_setcaret(LCD_WIDTH - 3 - 2 * 5, CONF_STATE);
-			lcd_puts("on");
+			lcd_setcaret(LCD_WIDTH - 3 - 3 * 5, CONF_STATE);
+			lcd_puts(" on");
 		} else {
 			lcd_setcaret(LCD_WIDTH - 3 - 3 * 5, CONF_STATE);
 			lcd_puts("off");
@@ -104,6 +105,22 @@ static void refocus(int oldfocus)
 
 }
 
+static bool heat_upd()
+{
+	if (!heat_online) {
+		heater_set(0);
+		return true;
+	}
+	/* all integers here are fixed point with 2 numbers: x.xx */
+	int w_actual = heat_voltage * heat_voltage * 10 / 35;
+	int w_target = heat_watt * 10;
+	if (w_target > w_actual)
+		return false;
+	int w_freq = w_target * 100 / w_actual;
+	heater_set((uint8_t) (((float) w_freq) / 100.f * 255.f));
+	return true;
+}
+
 static void app_event(enum ev_type typ, enum ev_key key)
 {
 	if (typ != EV_TYPE_RELEASE)
@@ -113,7 +130,9 @@ static void app_event(enum ev_type typ, enum ev_key key)
 	if (key == EV_KEY_UP) {
 		int oldfocus = focus;
 		focus--;
-		if (focus < CONF_VOLTAGE)
+		if (heat_online && focus < CONF_STATE)
+			focus = CONF_BACK;
+		else if (focus < CONF_VOLTAGE)
 			focus = CONF_BACK;
 		refocus(oldfocus);
 		return;
@@ -121,12 +140,35 @@ static void app_event(enum ev_type typ, enum ev_key key)
 		int oldfocus = focus;
 		focus++;
 		if (focus > CONF_BACK)
-			focus = CONF_VOLTAGE;
+			focus = heat_online ? CONF_STATE : CONF_VOLTAGE;
 		refocus(oldfocus);
 		return;
 	}
 
+
+	int val;
 	switch (focus) {
+	case CONF_VOLTAGE:
+		val = key == EV_KEY_LEFT ? -1 : 1;
+		heat_voltage += val;
+		upd_conf(CONF_VOLTAGE);
+		break;
+	case CONF_WATT:
+		val = key == EV_KEY_LEFT ? -1 : 1;
+		heat_watt += val;
+		upd_conf(CONF_WATT);
+		break;
+	case CONF_STATE:
+		val = key == EV_KEY_RIGHT;
+		if (val == heat_online)
+			break;
+		heat_online = val;
+		if (!heat_upd()) {
+			heat_online = !val;
+			break;
+		}
+		upd_conf(CONF_STATE);
+		break;
 	case CONF_BACK:
 		if (key != EV_KEY_LEFT)
 			break;

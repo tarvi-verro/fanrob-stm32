@@ -8,7 +8,7 @@ extern void setup_tim3();
 void setup_heater()
 {
 	io_heat->moder.pin_heat = GPIO_MODER_AF;
-	io_heat->ospeedr.pin_heat = GPIO_OSPEEDR_MEDIUM;
+	io_heat->ospeedr.pin_heat = GPIO_OSPEEDR_HIGH;
 	io_heat->otyper.pin_heat = GPIO_OTYPER_OD;
 	io_heat->pupdr.pin_heat = GPIO_PUPDR_NONE;
 	io_heat->afr.pin_heat = 0; /* tim3 ch3 */
@@ -21,6 +21,6 @@ void setup_heater()
 
 void heater_set(uint8_t b)
 {
-	tim3->ccr2 = b * 10;
+	tim3->ccr2 = (255 - b) * 10;
 }
 
