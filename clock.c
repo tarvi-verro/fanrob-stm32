@@ -22,7 +22,7 @@ void clock_exti_rtc()
 	alarm_callb();
 }
 
-void clock_alarm(struct rtc_alrmar alrm, void (*cb)())
+void clock_alarm(struct rtc_alrmar alrm, struct rtc_alrmassr ss, void (*cb)())
 {
 	rtc->wpr.key = 0xca; /* unlock write protection */
 	rtc->wpr.key = 0x53;
@@ -30,7 +30,9 @@ void clock_alarm(struct rtc_alrmar alrm, void (*cb)())
 	rtc->cr.alrae = 0;
 	while (!rtc->isr.alrawf);
 
+	ss.maskss = 0xf;
 	rtc->alrmar = alrm;
+	rtc->alrmassr = ss;
 	rtc->cr.osel = RTC_OSEL_ALARM_A;
 	rtc->cr.alraie = 1;
 	rtc->cr.alrae = 1;
@@ -55,7 +57,7 @@ void clock_alarm_stop(void (*cb)())
 	rtc->wpr.key = 0x11; /* relock write protection */
 }
 
-void clock_set(struct rtc_tr time, struct rtc_dr date)
+void clock_set(struct rtc_dr date, struct rtc_tr time)
 {
 	rtc->wpr.key = 0xca; /* unlock write protection */
 	rtc->wpr.key = 0x53;
@@ -74,14 +76,22 @@ void clock_set(struct rtc_tr time, struct rtc_dr date)
 void setup_clock(void)
 {
 	rcc->apb1enr.pwr_en = 1;
-	while(!rcc->apb1enr.pwr_en);
+	while (!rcc->apb1enr.pwr_en);
 
 	pwr->cr.dbp = 1;
 
+#ifdef LSI
 	rcc->bdcr.rtcsel = RCC_RTCSEL_LSI;
 
 	rcc->csr.lsion = 1;
-	while(!rcc->csr.lsirdy); /* wait for lsi to get ready */
+	while (!rcc->csr.lsirdy); /* wait for lsi to get ready */
+#else
+	rcc->bdcr.rtcsel = RCC_RTCSEL_LSE;
+
+	rcc->bdcr.lseon = 1;
+	rcc->bdcr.lsebyp = 0;
+	while (!rcc->bdcr.lserdy); /* wait for lse to get ready */
+#endif
 
 	rcc->bdcr.rtc_en = 1;
 
@@ -102,9 +112,15 @@ void setup_clock(void)
 	rtc->isr.init = 1;
 	while (!rtc->isr.initf); /* wait for init mode */
 
+#ifdef LSI
 	/* prediv lsi (~40kHz) to gen 1Hz */
-	rtc->prer.prediv_s = 320;
+	rtc->prer.prediv_s = 320 - 1;
 	rtc->prer.prediv_a = 125 - 1;
+#else
+	/* prediv lse (32kHz) to gen 1Hz */
+	rtc->prer.prediv_a = 128 - 1;
+	rtc->prer.prediv_s = 256 - 1;
+#endif
 
 	/* load initial date/time */
 	struct rtc_tr a = {
@@ -129,10 +145,12 @@ void setup_clock(void)
 	while (!rtc->isr.rsf);
 }
 
-void clock_get(struct rtc_tr *time, struct rtc_dr *date)
+void clock_get(struct rtc_dr *date, struct rtc_tr *time,
+		struct rtc_ssr *subsec)
 {
 	assert(rtc->isr.rsf);
 	*time = rtc->tr;
 	*date = rtc->dr;
+//	*subsec = rtc->ssr;
 }
 

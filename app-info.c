@@ -9,7 +9,7 @@ extern void assert(bool);
 #define row (2)
 
 
-static void display_clock(struct rtc_tr time, struct rtc_dr date)
+static void display_clock(struct rtc_dr date, struct rtc_tr time)
 {
 	lcd_setcaret(0, row);
 	lcd_putc('0' + date.yt);
@@ -37,8 +37,9 @@ static void upd()
 {
 	struct rtc_tr time;
 	struct rtc_dr date;
-	clock_get(&time, &date);
-	display_clock(time, date);
+	struct rtc_ssr subsec;
+	clock_get(&date, &time, &subsec);
+	display_clock(date, time);
 }
 
 static void sel()
@@ -119,8 +120,9 @@ static void refocus(int oldfocus)
 
 static void upd_conf()
 {
-	clock_get(&clock_time, &clock_date);
-	display_clock(clock_time, clock_date);
+	struct rtc_ssr subsec;
+	clock_get(&clock_date, &clock_time, &subsec);
+	display_clock(clock_date, clock_time);
 }
 
 static void sel_conf()
@@ -231,7 +233,7 @@ static void ev_conf(enum ev_type type, enum ev_key key)
 		clock_time.st = z / 10;
 		break;
 	}
-	clock_set(clock_time, clock_date);
+	clock_set(clock_date, clock_time);
 }
 
 struct app app_conf = {

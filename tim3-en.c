@@ -12,7 +12,7 @@ void setup_tim3()
 	/* Setup tim3 */
 	tim3->arr = 2550; /* auto-reload aka period */
 	//tim3->cnt = 500;
-	tim3->psc = 32000 - 1; /* prescaler */
+	tim3->psc = 32 - 1; /* prescaler */
 	tim3->ccmr.ch_lcdbg.out.ccs = TIM_CCS_OUT; /* output */
 	tim3->ccmr.ch_lcdbg.out.ocm = 6; /* 110 -- pwm mode 1 */
 	tim3->ccmr.ch_lcdbg.out.ocpe = 1; /* preload enable, enables changing ccr1

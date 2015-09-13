@@ -21,8 +21,8 @@
 /* keybd; this is more hardcoded than it impresses */
 #define io_kbd gpio_reg_c
 #define iop_kbd_en iopc_en
-#define pin_up pin14 /* TODO: pins used for x3, select another */
-#define pin_down pin15
+#define pin_up pin10
+#define pin_down pin11
 #define pin_left pin4
 #define pin_right pin5
 
@@ -41,10 +41,12 @@
 #define ch_lcdbg ch1 /* TIM3 PWM channel */
 
 /* heater wire */
-#define io_heat gpio_reg_c
-#define pin_heat pin7
+#define io_heat gpio_reg_a
+#define pin_heat pin11
 
-#define ch_heat ch2 /* TIM3 PWM channel */
+#define ch_heat ch4 /* TIM1 PWM channel */
+
+//#define LSI 1
 
 struct gpio_reg;
 struct rcc_reg;
@@ -65,7 +67,7 @@ static uint32_t *const gpioc = (uint32_t *) 0x48000800;
 static uint32_t *const gpioa = (uint32_t *) 0x48000000;
 static volatile struct gpio_reg *const gpio_reg_a = (struct gpio_reg *) 0x48000000;
 static volatile struct gpio_reg *const gpio_reg_c = (struct gpio_reg *) 0x48000800;
-static uint32_t *const tim1 = (uint32_t *) 0x40012C00;
+static volatile struct tim_reg *const tim1 = (struct tim_reg *) 0x40012C00;
 static volatile struct exti_reg *const exti = (struct exti_reg *) 0x40010400;
 static uint32_t *const exti_int = (uint32_t *) 0x40010400;
 static uint32_t *const syscfg_int = (uint32_t *) 0x40010000;

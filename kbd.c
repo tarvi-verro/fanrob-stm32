@@ -117,16 +117,16 @@ void kbd_tick()
 
 void kbd_exti_4_15(void)
 {
-	if (exti->pr.pr14) { /* pin_up */
-		exti->pr.pr14 = 1;
+	if (exti->pr.pr10) { /* pin_up */
+		exti->pr.pr10 = 1;
 		if (io_kbd->idr.pin_up)
 			key_states_now |= EV_KEY_UP;
 		else
 			key_states_now &= ~(EV_KEY_UP);
 		key_changes |= EV_KEY_UP;
 	}
-	if (exti->pr.pr15) { /* pin_down */
-		exti->pr.pr15 = 1;
+	if (exti->pr.pr11) { /* pin_down */
+		exti->pr.pr11 = 1;
 		if (io_kbd->idr.pin_down)
 			key_states_now |= EV_KEY_DOWN;
 		else
@@ -156,7 +156,7 @@ void setup_kbd()
 	cmb_bgval_upload();
 	rcc->ahbenr.iop_kbd_en = 1;
 	io_kbd->moder.pin_up = GPIO_MODER_IN;
-	io_kbd->pupdr.pin_down = GPIO_MODER_IN;
+	io_kbd->moder.pin_down = GPIO_MODER_IN;
 	io_kbd->pupdr.pin_up = GPIO_PUPDR_PULLDOWN;
 	io_kbd->pupdr.pin_down = GPIO_PUPDR_PULLDOWN;
 
@@ -165,18 +165,18 @@ void setup_kbd()
 	io_kbd->pupdr.pin_left = GPIO_PUPDR_PULLDOWN;
 	io_kbd->pupdr.pin_right = GPIO_PUPDR_PULLDOWN;
 
-	exti->imr.mr14 = exti->imr.mr15 = exti->imr.mr4 = exti->imr.mr5 = 1;
+	exti->imr.mr10 = exti->imr.mr11 = exti->imr.mr4 = exti->imr.mr5 = 1;
 
-	exti->rtsr.tr14 = exti->rtsr.tr15 = exti->rtsr.tr4 = exti->rtsr.tr5 = 1;
+	exti->rtsr.tr10 = exti->rtsr.tr11 = exti->rtsr.tr4 = exti->rtsr.tr5 = 1;
 
-	exti->ftsr.tr14 = exti->ftsr.tr15 = exti->ftsr.tr4 = exti->ftsr.tr5 = 1;
+	exti->ftsr.tr10 = exti->ftsr.tr11 = exti->ftsr.tr4 = exti->ftsr.tr5 = 1;
 
-	exti->pr.pr14 = exti->pr.pr15 = exti->pr.pr4 = exti->pr.pr5 = 1;
+	exti->pr.pr10 = exti->pr.pr11 = exti->pr.pr4 = exti->pr.pr5 = 1;
 
 	syscfg->exticr2.exti4 = SYSCFG_EXTI_PC;
 	syscfg->exticr2.exti5 = SYSCFG_EXTI_PC;
-	syscfg->exticr4.exti14 = SYSCFG_EXTI_PC;
-	syscfg->exticr4.exti15 = SYSCFG_EXTI_PC;
+	syscfg->exticr3.exti10 = SYSCFG_EXTI_PC;
+	syscfg->exticr3.exti11 = SYSCFG_EXTI_PC;
 
 	nvic_iser[0] |= 1 << 7;
 

@@ -61,7 +61,8 @@ static void exposure_program(int current_sec)
 
 	alrm_a[0] = alarm_smh_from_sec(start);
 	alrm_a[1] = alarm_smh_from_sec(end);
-	clock_alarm(alrm_a[0], exposure_callback);
+	clock_alarm(alrm_a[0], (struct rtc_alrmassr) { .ss = 0 },
+			exposure_callback);
 	expo_active++;
 }
 
@@ -70,7 +71,8 @@ static void exposure_callback()
 	if (expo_active & 1) {
 		camsig_set(1);
 		expo_active++;
-		clock_alarm(alrm_a[1], exposure_callback);
+		clock_alarm(alrm_a[1], (struct rtc_alrmassr) { .ss = 0 },
+				exposure_callback);
 		upd_conf(CONF_START, false);
 		return;
 	}
@@ -90,7 +92,8 @@ static void exposure_start()
 {
 	struct rtc_tr time;
 	struct rtc_dr date;
-	clock_get(&time, &date);
+	struct rtc_ssr subsec;
+	clock_get(&date, &time, &subsec);
 	int sec = time.su + time.st * 10
 		+ (time.mnu + time.mnt * 10) * 60
 		+ (time.hu + time.ht * 10) * 60 * 60;
