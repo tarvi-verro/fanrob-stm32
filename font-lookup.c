@@ -13,6 +13,8 @@ const uint8_t *glyph_5x8_lookup(const char c)
 		return font_bin + 140 + (c - ' ') * 5;
 	if (c == '\\')
 		return font_bin + 305;
+	if (c == '\t')
+		return font_bin + 310;
 	assert(false);
 	return NULL;
 }

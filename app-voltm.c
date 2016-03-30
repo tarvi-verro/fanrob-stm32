@@ -3,18 +3,23 @@
 #include "app.h"
 #include <stddef.h>
 #include "rcc.h"
+#include "adc.h"
+#include "decimal.h"
 
 static void draw(int all)
 {
 	// TODO: unfinished app, unfinished function
 	lcd_setcaret(2, 0);
-	lcd_puts("adc says:");
+	lcd_puts("adc infos:");
 	lcd_setcaret(2, 1);
-	lcd_puts("internal temp: ");
-	int i;
-	for (i = 0; i < 30; i++) // TODO: this was just for testing
-		sleep_busy(1000*1000*1000*1);
-	lcd_puts(" ok");
+	lcd_puts("cpu t: ");
+
+	lcd_setcaret(LCD_WIDTH - 3 - 4 * 5, 1);
+
+	int t = get_temp();
+	print_decimal(t, 2);
+
+	lcd_puts("\tc");
 
 }
 
