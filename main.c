@@ -6,6 +6,7 @@
 #include "conf.h"
 #include "app.h"
 #include "kbd.h"
+#include "adc.h"
 #include "camsig.h"
 #include "heater.h"
 
@@ -120,11 +121,12 @@ int main(void)
 	setup_kbd();
 	setup_camsig();
 	setup_heater();
+	setup_adc();
 
 	unsigned int z = 1;
 	unsigned int a;
 	while (1) {
-		kbd_tick();
+		kbd_tick(); /* key changes */
 		z++;
 		if ((z & 0xff) != 0x0)
 			continue;

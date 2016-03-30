@@ -30,4 +30,5 @@ extern struct app app_info; /* app-info.c */
 extern struct app app_conf; /* app-info.c */
 extern struct app app_menu; /* app-menu.c */
 extern struct app app_heater; /* app-heater.c */
+extern struct app app_voltm; /* app-voltm.c */
 

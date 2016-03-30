@@ -6,6 +6,13 @@ AS:=arm-none-eabi-as
 AR:=arm-none-eabi-ar
 LD:=arm-none-eabi-ld
 
+# Where libgcc.a and the libnosys.a are, often times the version has to be
+# bumped.
+PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/5.3.0/armv6-m
+
+# Location of libc.a and libm.a.
+PATH_LIBNEW?=/usr/arm-none-eabi/lib/armv6-m
+
 ifndef O
 O:=build
 endif
@@ -16,9 +23,13 @@ endif
 
 all: $O/prg
 
+chkpath:
+	@[ -d $(PATH_LIBGCC) ]
+	@[ -d $(PATH_LIBNEW) ]
+
 SRC:=main.c early.S early_reset.c lcd-com.c font-lookup.c clock.c app-info.c \
 	app.c app-menu.c app-exposure.c kbd.c camsig.c app-heater.c heater.c \
-	tim3-en.c decimal.c tim1-en.c
+	tim3-en.c decimal.c tim1-en.c app-voltm.c adc.c rcc.c
 
 OBJ:=$O/font-bin.o \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \
@@ -32,8 +43,8 @@ CFLAGS:=$(CFLAGS) -g3 -O0 -mthumb -mcpu=cortex-m0 -fno-stack-protector \
 ASFLAGS:= -g3 -mthumb -mcpu=cortex-m0 -EL
 
 LDFLAGS:=$(LDFLAGS) \
-	-L/usr/lib/gcc/arm-none-eabi/5.2.0/armv6-m \
-	-L/usr/arm-none-eabi/lib/armv6-m \
+	-L$(PATH_LIBGCC) \
+	-L$(PATH_LIBNEW) \
 	-lgcc -lc -lnosys
 
 $O:
@@ -71,7 +82,7 @@ include font-cc.mk
 $O/.aux: | $O
 	@mkdir $O/.aux
 
-$O/prg: $(OBJ) linker.ld
+$O/prg: $(OBJ) linker.ld | chkpath
 ifeq ($(PRINT_PRETTY), 1)
 	@printf "  LD\t$@\n"
 	@$(LD) -T linker.ld -o $@ $(OBJ) $(LDFLAGS)
@@ -82,5 +93,5 @@ endif
 clean::
 	rm -rf $(OBJ) $O/prg
 
-.PHONY: clean all
+.PHONY: clean all chkpath
 

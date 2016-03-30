@@ -7,8 +7,8 @@ enum {
 	ITEM_INFO,
 	ITEM_CONF,
 	ITEM_EXPO,
-	ITEM_TLAPSE,
 	ITEM_HEAT,
+	ITEM_VOLTM,
 	ITEM_SNAKE,
 	ITEM_MAX,
 };
@@ -16,8 +16,8 @@ static const char items[][16 - 2] = {
 	"just info",
 	"configure sys",
 	"single expo",
-	"timelapse",
 	"heater",
+	"voltmeter",
 	"snake",
 };
 #define items_length (sizeof(items)/sizeof(items[0]))
@@ -93,6 +93,8 @@ static void ev(enum ev_type type, enum ev_key key)
 			app_push(&app_conf);
 		else if (focus == ITEM_HEAT)
 			app_push(&app_heater);
+		else if (focus == ITEM_VOLTM)
+			app_push(&app_voltm);
 		/* to next app */
 	}
 }
