@@ -8,3 +8,10 @@ extern void setup_adc();
  */
 extern int get_temp();
 
+/**
+ * get_vdda() - get the operating voltage
+ *
+ * Return: mV
+ */
+extern int get_vdda();
+
