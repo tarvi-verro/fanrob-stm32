@@ -36,7 +36,7 @@ OBJ:=$O/font-bin.o \
 	$(patsubst %.S, $O/%.o, $(filter %.S, $(SRC)))
 
 
-CFLAGS:=$(CFLAGS) -g3 -O0 -mthumb -mcpu=cortex-m0 -fno-stack-protector \
+cflags:=$(CFLAGS) -g3 -O0 -mthumb -mcpu=cortex-m0 -fno-stack-protector \
 	-ffunction-sections -fdata-sections -fmessage-length=0 -Wall \
 	-fno-builtin -Wa,-mcpu=cortex-m0,-mthumb,-EL
 
@@ -63,15 +63,15 @@ $O/%.o: %.c | $O
 	@mkdir -p $(@D)
 ifeq ($(PRINT_PRETTY), 1)
 	@printf "  CC\t$@\n"
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(cflags) -c $< -o $@
 else
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(cflags) -c $< -o $@
 endif
 
 # Makes the .d header dependency connections
 $O/%.d: %.c | $O
 	@mkdir -p $(@D)
-	@printf $*.d\ > $@; $(CC) -MM -MG $(CFLAGS) "$*.c" >> $@
+	@printf $*.d\ > $@; $(CC) -MM -MG $(cflags) "$*.c" >> $@
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(patsubst %.c, %.d, $(filter %.c, $(SRC)))

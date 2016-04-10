@@ -1,26 +1,29 @@
 #include "f0-gpio.h"
 #include "f0-tim.h"
+#include "f0-rcc.h"
 #include "conf.h"
 #include "heater.h"
 
-extern void setup_tim1();
+extern void setup_tim14();
 
 void setup_heater()
 {
+	/* FW232 mosfet */
+	rcc->ahbenr.iop_heat_en = 1;
 	io_heat->moder.pin_heat = GPIO_MODER_AF;
 	io_heat->ospeedr.pin_heat = GPIO_OSPEEDR_HIGH;
-	io_heat->otyper.pin_heat = GPIO_OTYPER_OD;
+	io_heat->otyper.pin_heat = GPIO_OTYPER_PP;
 	io_heat->pupdr.pin_heat = GPIO_PUPDR_NONE;
-	io_heat->afr.pin_heat = 2; /* tim1 ch4, AF2 */
+	io_heat->afr.pin_heat = 0; /* tim14 ch1, AF0 */
 
-	setup_tim1();
+	setup_tim14();
 
-	tim1->ccer.cc4e = 1;
-	tim1->ccr4 = 2550;
+	tim14->ccer.cc1e = 1;
+	tim14->ccr1 = 0;
 }
 
 void heater_set(uint8_t b)
 {
-	tim1->ccr4 = (255 - b) * 10;
+	tim14->ccr1 = (b) * 10;
 }
 

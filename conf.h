@@ -41,12 +41,9 @@
 #define ch_lcdbg ch1 /* TIM3 PWM channel */
 
 /* heater wire */
-#define io_heat gpio_reg_a
-#define pin_heat pin11
-
-#define ch_heat ch4 /* TIM1 PWM channel */
-
-//#define LSI 1
+#define io_heat gpio_reg_b
+#define iop_heat_en iopb_en
+#define pin_heat pin1
 
 struct gpio_reg;
 struct rcc_reg;
@@ -69,8 +66,10 @@ static volatile struct adc_reg *const adc = (struct adc_reg *) 0x40012400;
 static uint32_t *const gpioc = (uint32_t *) 0x48000800;
 static uint32_t *const gpioa = (uint32_t *) 0x48000000;
 static volatile struct gpio_reg *const gpio_reg_a = (struct gpio_reg *) 0x48000000;
+static volatile struct gpio_reg *const gpio_reg_b = (struct gpio_reg *) 0x48000400;
 static volatile struct gpio_reg *const gpio_reg_c = (struct gpio_reg *) 0x48000800;
 static volatile struct tim_reg *const tim1 = (struct tim_reg *) 0x40012C00;
+static volatile struct tim_reg *const tim14 = (struct tim_reg *) 0x40002000;
 static volatile struct exti_reg *const exti = (struct exti_reg *) 0x40010400;
 static uint32_t *const exti_int = (uint32_t *) 0x40010400;
 static uint32_t *const syscfg_int = (uint32_t *) 0x40010000;
