@@ -8,7 +8,7 @@ LD:=arm-none-eabi-ld
 
 # Where libgcc.a and the libnosys.a are, often times the version has to be
 # bumped.
-PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/5.3.0/armv6-m
+PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/6.1.1/armv6-m
 
 # Location of libc.a and libm.a.
 PATH_LIBNEW?=/usr/arm-none-eabi/lib/armv6-m
@@ -29,7 +29,7 @@ chkpath:
 
 SRC:=main.c early.S early_reset.c lcd-com.c font-lookup.c clock.c app-info.c \
 	app.c app-menu.c app-exposure.c kbd.c camsig.c app-heater.c heater.c \
-	tim3-en.c decimal.c tim1-en.c app-voltm.c adc.c rcc.c
+	decimal.c tim1-en.c app-voltm.c adc.c rcc.c
 
 OBJ:=$O/font-bin.o \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \
