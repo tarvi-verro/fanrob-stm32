@@ -61,8 +61,8 @@ static void exposure_program(int current_sec)
 
 	alrm_a[0] = alarm_smh_from_sec(start);
 	alrm_a[1] = alarm_smh_from_sec(end);
-	clock_alarm(alrm_a[0], (struct rtc_alrmassr) { .ss = 0 },
-			exposure_callback);
+//	clock_alarm(alrm_a[0], (struct rtc_alrmassr) { .ss = 0 },
+//			exposure_callback);
 	expo_active++;
 }
 
@@ -71,8 +71,8 @@ static void exposure_callback()
 	if (expo_active & 1) {
 		camsig_set(1);
 		expo_active++;
-		clock_alarm(alrm_a[1], (struct rtc_alrmassr) { .ss = 0 },
-				exposure_callback);
+//		clock_alarm(alrm_a[1], (struct rtc_alrmassr) { .ss = 0 },
+//				exposure_callback);
 		upd_conf(CONF_START, false);
 		return;
 	}
@@ -80,7 +80,7 @@ static void exposure_callback()
 	if ((expo_active / 2) >= expo_n) {
 		expo_active = 0;
 		expo_ended = 1;
-		clock_alarm_stop(exposure_callback);
+//		clock_alarm_stop(exposure_callback);
 		return;
 	}
 	expo_active_t += expo_delay + expo_sec;
@@ -253,7 +253,7 @@ static void rm()
 {
 	if (expo_active) {
 		expo_active = 0;
-		clock_alarm_stop(exposure_callback);
+//		clock_alarm_stop(exposure_callback);
 		camsig_set(0);
 	}
 	app_update = NULL;
@@ -344,7 +344,7 @@ static void ev(enum ev_type type, enum ev_key key)
 		}
 		/* end active expo */
 		expo_active = 0;
-		clock_alarm_stop(exposure_callback);
+//		clock_alarm_stop(exposure_callback);
 		camsig_set(0);
 		upd_conf(CONF_START, true);
 		upd_conf(CONF_TITLE, true);

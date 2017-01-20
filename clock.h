@@ -1,4 +1,4 @@
-#include "f0-rtc.h"
+#include "l4-rtc.h"
 
 extern void clock_get(struct rtc_dr *date, struct rtc_tr *time,
 		struct rtc_ssr *subsec);

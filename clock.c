@@ -3,15 +3,16 @@
 extern void assert(bool);
 
 #include "conf.h"
-#include "f0-rtc.h"
-#include "f0-rcc.h"
-#include "f0-pwr.h"
-#include "f0-exti.h"
+#include "l4-rtc.h"
+#include "l4-rcc.h"
+#include "l4-pwr.h"
+#include "l4-exti.h"
 #include "clock.h"
 
 
 void (*alarm_callb)() = NULL;
 
+#if 0
 void clock_exti_rtc()
 {
 	exti->pr.pr17 = 1; /* writing 1 clears bit */
@@ -57,6 +58,8 @@ void clock_alarm_stop(void (*cb)())
 	rtc->wpr.key = 0x11; /* relock write protection */
 }
 
+#endif
+
 void clock_set(struct rtc_dr date, struct rtc_tr time)
 {
 	rtc->wpr.key = 0xca; /* unlock write protection */
@@ -73,34 +76,40 @@ void clock_set(struct rtc_dr date, struct rtc_tr time)
 	while (!rtc->isr.rsf);
 }
 
-void setup_clock(void)
+void clock_init_lse()
 {
-	rcc->apb1enr.pwr_en = 1;
-	while (!rcc->apb1enr.pwr_en);
-
-	pwr->cr.dbp = 1;
-
-#ifdef LSI
-	rcc->bdcr.rtcsel = RCC_RTCSEL_LSI;
-
-	rcc->csr.lsion = 1;
-	while (!rcc->csr.lsirdy); /* wait for lsi to get ready */
-#else
 	rcc->bdcr.rtcsel = RCC_RTCSEL_LSE;
 
 	rcc->bdcr.lseon = 1;
 	rcc->bdcr.lsebyp = 0;
 	while (!rcc->bdcr.lserdy); /* wait for lse to get ready */
+}
+
+void setup_clock(void)
+{
+	rcc->apb1enr1.pwren = 1;
+	while (!rcc->apb1enr1.pwren);
+
+	pwr->cr1.dbp = 1;
+
+#ifdef LSI
+	_Static_assert(1==2, "Not supported?");
+	rcc->bdcr.rtcsel = RCC_RTCSEL_LSI;
+
+	rcc->csr.lsion = 1;
+	while (!rcc->csr.lsirdy); /* wait for lsi to get ready */
+#else
+	clock_init_lse();
 #endif
 
-	rcc->bdcr.rtc_en = 1;
+	rcc->bdcr.rtcen = 1;
 
 	/* Enable RTC interrupts
 	 * "RTC Interrupts (combined EXTI lines 17, 19, and 20)" */
-	exti->imr.mr19 = exti->imr.mr20 = exti->imr.mr17 = 1;
-	exti->rtsr.tr19 = exti->rtsr.tr20 = exti->rtsr.tr17 = 1;
-	exti->pr.pr19 = exti->pr.pr20 = exti->pr.pr17 = 1;
-	nvic_iser[0] |= 1 << 2;
+	//exti->imr.mr19 = exti->imr.mr20 = exti->imr.mr17 = 1;
+	//exti->rtsr.tr19 = exti->rtsr.tr20 = exti->rtsr.tr17 = 1;
+	//exti->pr.pr19 = exti->pr.pr20 = exti->pr.pr17 = 1;
+	//nvic_iser[0] |= 1 << 2;
 
 	if (rtc->isr.inits) /* already setup */
 		return;
@@ -149,8 +158,11 @@ void clock_get(struct rtc_dr *date, struct rtc_tr *time,
 		struct rtc_ssr *subsec)
 {
 	assert(rtc->isr.rsf);
-	*time = rtc->tr;
-	*date = rtc->dr;
+	if (time != NULL)
+		*time = rtc->tr;
+
+	if (date != NULL)
+		*date = rtc->dr;
 //	*subsec = rtc->ssr;
 }
 
