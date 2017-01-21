@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "tim.h"
 #include "lpuart.h"
 #include "dma.h"
 #include <stdbool.h>

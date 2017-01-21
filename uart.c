@@ -153,6 +153,7 @@ void setup_uart()
 
 
 	// Set up DMA
+#ifdef CONF_L4
 	/*
 	 * For L4 DMA2: (hw registers page 302)
 	 *	   Request number | Channel 6	| Channel 7
@@ -163,6 +164,7 @@ void setup_uart()
 	dma2->ch7.cpar = &lpuart1->rdr; // Peripheral address
 	dma2->ch7.cmar = uart_readbuf; // Memory address to push data to
 	dma2->ch7.cndtr.ndt = sizeof(uart_readbuf) - 1; // Total number of data to be transferred
+#endif
 
 	for (int z = 0; z < 0x80000; z++) asm("nop");
 
@@ -176,12 +178,14 @@ void setup_uart()
 		.pinc = 0, // Peripheral increment mode
 		.tcie = 1, // Transfer complete interrupt
 	};
+#ifdef CONF_L4
 	dma2->ch7.ccr = ccr;
 	nvic_iser[2] |= 1 << 5;
 
 	dma2->cselr.ch7.cs = 4; // Select 0100:LPUART_RX
 
 	dma2->ch7.ccr.en = 1;
+#endif
 	interr_dma2_ch7();
 	lpuart1->cr1.re = 1;
 	while (!lpuart1->isr.reack);
@@ -192,7 +196,9 @@ extern void assert(bool); // main.c
 void interr_dma2_ch7()
 {
 //	io_green->odr.pin_green ^= 1;
+#ifdef CONF_L4
 	dma2->ifcr.ch7.ctcif = 1;
+#endif
 }
 
 void interr_lpuart1()
