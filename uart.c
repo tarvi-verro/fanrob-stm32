@@ -1,15 +1,15 @@
 #include "conf.h"
-#include "l4-lpuart.h"
-#include "l4-rcc.h"
-#include "l4-gpio.h"
-#include "l4-dma.h"
+#include "lpuart.h"
+#include "rcc.h"
+#include "gpio.h"
+#include "dma.h"
 #include "uart.h"
 #include <stdbool.h>
 
 
 static void setup_uart_pins()
 {
-	rcc->ahb2enr.iop_uart_en = 1;
+	rcc->iop_uart_rcc.iop_uart_en = 1;
 
 	io_uart->moder.pin_uart_tx = GPIO_MODER_AF;
 	io_uart->moder.pin_uart_rx = GPIO_MODER_AF;
@@ -67,7 +67,11 @@ void setup_uart()
 	for (int i = 0; i < sizeof(uart_readbuf); i++)
 		uart_readbuf[i] = 0;
 
+#ifdef CONF_L4
 	rcc->apb1enr2.lpuart1en = 1;
+#elif defined(CONF_L0)
+	rcc->apb1enr.lpuart1en = 1;
+#endif
 	setup_uart_pins();
 
 	int i;
@@ -151,7 +155,7 @@ void setup_uart()
 	// Set up DMA
 	/*
 	 * For L4 DMA2: (hw registers page 302)
-	 * 	   Request number | Channel 6	| Channel 7
+	 *	   Request number | Channel 6	| Channel 7
 	 *			4 | LPUART_TX	| LPUART_RX
 	 */
 	rcc->ahb1enr.dma2en = 1;

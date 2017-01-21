@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#define CONF_F0
+
 /* PC8 is the blue led */
 #define io_blue gpio_reg_c
 #define iop_blue_en iopc_en

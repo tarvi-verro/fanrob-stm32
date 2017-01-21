@@ -4,7 +4,7 @@
 #include "f0-adc.h"
 #include "f0-rcc.h"
 #include <stdbool.h>
-#include "rcc.h"
+#include "rcc-c.h"
 extern void assert(bool);
 
 void setup_adc()

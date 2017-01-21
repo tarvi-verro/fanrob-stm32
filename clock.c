@@ -3,10 +3,10 @@
 extern void assert(bool);
 
 #include "conf.h"
-#include "l4-rtc.h"
-#include "l4-rcc.h"
-#include "l4-pwr.h"
-#include "l4-exti.h"
+#include "rtc.h"
+#include "rcc.h"
+#include "pwr.h"
+#include "exti.h"
 #include "clock.h"
 
 
@@ -78,19 +78,23 @@ void clock_set(struct rtc_dr date, struct rtc_tr time)
 
 void clock_init_lse()
 {
+#ifdef CONF_L4
 	rcc->bdcr.rtcsel = RCC_RTCSEL_LSE;
 
 	rcc->bdcr.lseon = 1;
 	rcc->bdcr.lsebyp = 0;
 	while (!rcc->bdcr.lserdy); /* wait for lse to get ready */
+#endif
 }
 
 void setup_clock(void)
 {
+#ifdef CONF_L4
 	rcc->apb1enr1.pwren = 1;
 	while (!rcc->apb1enr1.pwren);
 
 	pwr->cr1.dbp = 1;
+#endif
 
 #ifdef LSI
 	_Static_assert(1==2, "Not supported?");
@@ -102,7 +106,9 @@ void setup_clock(void)
 	clock_init_lse();
 #endif
 
+#ifdef CONF_L4
 	rcc->bdcr.rtcen = 1;
+#endif
 
 	/* Enable RTC interrupts
 	 * "RTC Interrupts (combined EXTI lines 17, 19, and 20)" */

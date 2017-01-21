@@ -117,7 +117,7 @@ struct rcc_reg {
 	struct rcc_ccipr ccipr;		// 0x88
 	uint32_t _padding8[1];		// 0x8C
 	struct rcc_bdcr bdcr;		// 0x90
-	struct rcc_cfgr csr;		// 0x94
+	uint32_t csr;			// 0x94
 	uint32_t crrcr;			// 0x98
 };
 

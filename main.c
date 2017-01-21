@@ -1,11 +1,11 @@
 #include <stdint.h>
-#include "l4-lpuart.h"
-#include "l4-dma.h"
+#include "lpuart.h"
+#include "dma.h"
 #include <stdbool.h>
-#include "l4-gpio.h"
-#include "l4-rcc.h"
+#include "gpio.h"
+#include "rcc.h"
 #include "f0-spi.h"
-#include "conf-l4.h"
+#include "conf.h"
 #include "app.h"
 #include "kbd.h"
 #include "adc.h"
@@ -60,7 +60,7 @@ void setup_usrbtn(void)
 void setup_leds(void)
 {
 	//rcc->ahbenr.iop_blue_en = 1;
-	rcc->ahb2enr.iop_green_en = 1;
+	rcc->iop_green_rcc.iop_green_en = 1;
 
 	io_green->moder.pin_green = GPIO_MODER_OUT;
 	//io_blue->moder.pin_blue = GPIO_MODER_OUT;
@@ -113,6 +113,7 @@ void assert(bool cnd)
 void (*app_update)() = NULL;
 
 
+#if 0
 int alt(void)
 {
 	//io_uart->afr.pin_uart_tx = 8;
@@ -151,6 +152,7 @@ int alt(void)
 		}
 	}
 }
+#endif
 
 int main(void)
 {
@@ -189,8 +191,8 @@ int main(void)
 			uart_print(" rxne:");
 			uart_send_byte('0' + lpuart1->isr.rxne);
 
-			uart_print(" cndtr:");
-			uart_send_byte(dma2->ch7.cndtr + 'a');
+			//uart_print(" cndtr:");
+			//uart_send_byte(dma2->ch7.cndtr + 'a');
 
 			uart_print(" re:");
 			uart_send_byte(lpuart1->cr1.re + '0');

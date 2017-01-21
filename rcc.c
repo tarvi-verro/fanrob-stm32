@@ -1,4 +1,4 @@
-#include "rcc.h"
+#include "rcc-c.h"
 
 // These values are based on default startup system clock state.
 static const unsigned t_clock_ns = 125; // 8 MHz = 1/(8 * 10⁶) s = 0.000000125 s = 125 ns

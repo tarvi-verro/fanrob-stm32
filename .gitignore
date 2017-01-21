@@ -1,1 +1,11 @@
 build
+early.S
+linker.ld
+conf.h
+lpuart.h
+dma.h
+gpio.h
+rcc.h
+rtc.h
+pwr.h
+exti.h

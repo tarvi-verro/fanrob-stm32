@@ -2,7 +2,7 @@
 #include "lcd-com.h"
 #include "app.h"
 #include <stddef.h>
-#include "rcc.h"
+#include "rcc-c.h"
 #include "adc.h"
 #include "decimal.h"
 
