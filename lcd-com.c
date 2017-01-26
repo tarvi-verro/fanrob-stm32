@@ -1,11 +1,23 @@
-#include "f0-gpio.h"
-#include "f0-spi.h"
-#include "f0-rcc.h"
-#include "f0-dma.h"
-#include "f0-tim.h"
-#include <stdbool.h>
-
 #include "conf.h"
+
+#ifndef CONF_F0
+#warning lcd-com not supported on target
+#include "lcd-com.h"
+void lcd_send(bool data_mode /* false:command mode */,
+		const uint8_t *a, int l) {}
+void lcd_putc(char c) {}
+void lcd_puts(const char *s) {}
+void lcd_setcaret(int x, int y) {}
+void lcd_bgset(uint8_t b) {}
+void lcd_repeat(uint8_t x, int n) {}
+void lcd_clear() {}
+#else
+
+#include "gpio.h"
+#include "spi.h"
+#include "rcc.h"
+#include "dma.h"
+#include "tim.h"
 
 #define VOPSET	(1 << 7)
 #define BSSET	(1 << 4) /* H=1 */
@@ -261,3 +273,4 @@ void lcd_puts(const char *msg)
 	}
 }
 
+#endif

@@ -5,16 +5,16 @@
 #include <stdbool.h>
 #include "gpio.h"
 #include "rcc.h"
-#include "f0-spi.h"
+//#include "f0-spi.h"
 #include "conf.h"
 #include "app.h"
 #include "kbd.h"
 #include "adc.h"
 #include "uart.h"
-#include "camsig.h"
-#include "heater.h"
 
 void assert(bool);
+void setup_fanctl(); /* fanctl.c */
+void fanctl_setspeed(uint8_t speed);
 
 #define lcd 1
 #ifdef lcd
@@ -155,6 +155,8 @@ int alt(void)
 }
 #endif
 
+extern void cmd_check(); /* cmd.c */
+
 int main(void)
 {
 	int cnt = 0;
@@ -163,75 +165,24 @@ int main(void)
 #ifdef clock
 	setup_clock();
 #endif
+	setup_fanctl();
 	setup_uart();
-	uart_send_byte('\r');
-	uart_send_byte('\n');
-	uart_send_byte('\n');
+	uart_print("\r\n\nChip has been restarted!\r\n");
+	fanctl_setspeed(244);
 	while (1) {
 		cnt++;
+		cmd_check();
+		if (cnt % 0x10000 == 0x0)
+			; // fanctl_setspeed((cnt / 0x10000) % 256);
 		if (cnt % 0x80000 == 0x0) {
-			//io_green->bsrr.reset.pin_green = 1;
-			uart_send_byte('\r');
-			uart_send_byte('\n');
-
-			struct rtc_tr time;
-			clock_get(NULL, &time, NULL);
-
-			uart_send_byte('0' + time.ht);
-			uart_send_byte('0' + time.hu);
-
-			uart_send_byte(':');
-			uart_send_byte('0' + time.mnt);
-			uart_send_byte('0' + time.mnu);
-
-			uart_send_byte(':');
-			uart_send_byte('0' + time.st);
-			uart_send_byte('0' + time.su);
-
-
-			uart_print(" rxne:");
-			uart_send_byte('0' + lpuart1->isr.rxne);
-
-			//uart_print(" cndtr:");
-			//uart_send_byte(dma2->ch7.cndtr + 'a');
-
-			uart_print(" re:");
-			uart_send_byte(lpuart1->cr1.re + '0');
-
-			uart_print(" noisef:");
-			uart_send_byte(lpuart1->isr.nf + '0');
-
-			uart_print(" fe:");
-			uart_send_byte(lpuart1->isr.fe + '0');
-
-			uart_print(" pe:");
-			uart_send_byte(lpuart1->isr.pe + '0');
-
-			uart_print(" rdr:");
-			uart_send_byte(lpuart1->rdr.rdr);
-
-			uart_print(" ore:");
-			uart_send_byte(lpuart1->isr.ore + '0');
-
-			uart_print(" idle:");
-			uart_send_byte(lpuart1->isr.idle + '0');
-
-			uart_print(" busy:");
-			uart_send_byte(lpuart1->isr.busy + '0');
-
-			if (lpuart1->isr.idle) {
-				lpuart1->icr.idlecf = 1;
-			}
-
-			uart_send_byte('\r');
-			uart_send_byte('\n');
+			io_green->bsrr.reset.pin_green = 1;
 		} else if (cnt % 0x40000 == 0x0) {
-			//io_green->bsrr.set.pin_green = 1;
-			uart_send_byte('\r');
-			uart_send_byte('\n');
+			io_green->bsrr.set.pin_green = 1;
+			//uart_send_byte('\r');
+			//uart_send_byte('\n');
 		}
 		if (cnt % 0x10000 == 0x0) {
-			uart_send_byte(' ');
+		//	uart_send_byte(' ');
 		}
 	}
 	setup_leds();
@@ -241,8 +192,6 @@ int main(void)
 	app_push(&app_info);
 #endif
 	setup_kbd();
-	setup_camsig();
-	setup_heater();
 	setup_adc();
 
 	unsigned int z = 1;

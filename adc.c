@@ -1,5 +1,12 @@
-
 #include "conf.h"
+
+#ifndef CONF_F0
+#warning adc not supported on target
+void setup_adc() {}
+int get_temp() { return 0; }
+int get_vdda() { return 0; }
+#else
+
 #include "adc.h"
 #include "f0-adc.h"
 #include "f0-rcc.h"
@@ -118,4 +125,4 @@ int get_temp()
 	return t;
 }
 
-
+#endif

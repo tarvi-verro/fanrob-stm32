@@ -87,12 +87,16 @@ static void ev(enum ev_type type, enum ev_key key)
 	} else if (key == EV_KEY_RIGHT) {
 		if (focus == ITEM_INFO)
 			app_pop();
-		else if (focus == ITEM_EXPO)
-			app_push(&app_exposure);
 		else if (focus == ITEM_CONF)
 			app_push(&app_conf);
+#ifdef CONF_F0
 		else if (focus == ITEM_HEAT)
 			app_push(&app_heater);
+		else if (focus == ITEM_EXPO)
+			app_push(&app_exposure);
+#else
+#warning app-menu needs a dynamic menu thing
+#endif
 		else if (focus == ITEM_VOLTM)
 			app_push(&app_voltm);
 		/* to next app */

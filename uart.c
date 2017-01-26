@@ -1,5 +1,6 @@
 #include "conf.h"
 #include "lpuart.h"
+#include "exti.h"
 #include "rcc.h"
 #include "gpio.h"
 #include "dma.h"
@@ -14,8 +15,13 @@ static void setup_uart_pins()
 	io_uart->moder.pin_uart_tx = GPIO_MODER_AF;
 	io_uart->moder.pin_uart_rx = GPIO_MODER_AF;
 
+#ifdef CONF_L4
 	io_uart->afr.pin_uart_tx = 8;
 	io_uart->afr.pin_uart_rx = 8;
+#elif defined(CONF_L0)
+	io_uart->afr.pin_uart_tx = 6;
+	io_uart->afr.pin_uart_rx = 6;
+#endif
 
 	io_uart->ospeedr.pin_uart_tx = GPIO_OSPEEDR_MEDIUM;
 	io_uart->ospeedr.pin_uart_rx = GPIO_OSPEEDR_MEDIUM;
@@ -32,7 +38,41 @@ static void setup_uart_pins()
 
 }
 
-void uart_print(char *s)
+void uart_print_visible(const char *s)
+{
+	for (; *s != '\0'; s++) {
+		char z = *s;
+		if ((z >= 'A' && z <= 'Z') || (z >= 'a' && z <= 'z') || (z >= '0' && z <= '9')
+				|| z == ' ' || z == '!' || z == '@' || z == '$' || z == '?' || z == '[' || z == ']') {
+			uart_send_byte(*s);
+			continue;
+		}
+		uart_send_byte('\\');
+		uart_send_byte('x');
+		char h = (z & 0xf0) >> 4;
+		char l = z & 0xf;
+		if (h > 9)	uart_send_byte('a' + (h % 10));
+		else		uart_send_byte('0' + h);
+		if (l > 9)	uart_send_byte('a' + (l % 10));
+		else		uart_send_byte('0' + l);
+	}
+}
+
+void uart_print_int(unsigned z)
+{
+	char buf[sizeof("4294967295")];
+	int j = 0;
+	for (unsigned i = 1; i <= 1000000000; i*=10) {
+		buf[j] = (z / i) % 10;
+		j++;
+		if (i == 1000000000)
+			break;
+	}
+	for (int i = j - 1; i >= 0; i--)
+		uart_send_byte('0' + buf[i]);
+}
+
+void uart_print(const char *s)
 {
 	for (; *s != '\0'; s++)
 		uart_send_byte(*s);
@@ -145,11 +185,25 @@ void setup_uart()
 //	lpuart1->cr1.te = 0;
 	while (!lpuart1->cr1.ue);
 
+#ifdef CONF_L4
 	// Set up break on '\n' to parse full lines
-	lpuart1->cr2.add_0 = '\n' & 0x0f;
-	lpuart1->cr2.add_1 = ('\n' & 0xf0) >> 4;
-	lpuart1->cr1.cmie = 1; // enable interrupt
-	nvic_iser[2] |= 1 << 6;
+	lpuart1->cr2.add_0 = '\r' & 0x0f;
+	lpuart1->cr2.add_1 = ('\r' & 0xf0) >> 4;
+	lpuart1->cr1.cmie = 1; // enable character match interrupt
+	nvic_iser[6] |= 1 << 6;
+#elif defined(CONF_L0)
+	/*
+	 * For some reason on L0 setting cmie enables tcie. Also the character
+	 * match events are never generated. Perhaps something to do with
+	 * "through EXTI 28"?
+	 *
+	//lpuart1->cr1.tcie = 0;
+	nvic_iser[0] |= 1 << 29;
+	exti->imr.im28 = 1;
+	exti->emr.em28 = 1;
+	 */
+
+#endif
 
 
 	// Set up DMA
@@ -164,9 +218,20 @@ void setup_uart()
 	dma2->ch7.cpar = &lpuart1->rdr; // Peripheral address
 	dma2->ch7.cmar = uart_readbuf; // Memory address to push data to
 	dma2->ch7.cndtr.ndt = sizeof(uart_readbuf) - 1; // Total number of data to be transferred
+#elif defined(CONF_L0)
+	/*
+	 * For L0 DMA1 (hw registers page 245, 253-254)
+	 *	   Request number | Channel 2	| Channel 3
+	 *	   		5 | LPUART1_TX	| LPUART1_RX
+	 */
+	rcc->ahbenr.dma1en = 1;
+
+	dma1->ch3.cpar = &lpuart1->rdr; // Peripheral address
+	dma1->ch3.cmar = uart_readbuf; // Memory address to push data to
+	dma1->ch3.cndtr.ndt = sizeof(uart_readbuf) - 1; // Total number of data to be transferred
 #endif
 
-	for (int z = 0; z < 0x80000; z++) asm("nop");
+	for (int z = 0; z < 0x8000; z++) asm("nop");
 
 	struct dma_ccr ccr  = {
 		.pl = DMA_PL_MEDIUM,
@@ -185,28 +250,50 @@ void setup_uart()
 	dma2->cselr.ch7.cs = 4; // Select 0100:LPUART_RX
 
 	dma2->ch7.ccr.en = 1;
-#endif
 	interr_dma2_ch7();
+#elif defined(CONF_L0)
+	dma1->ch3.ccr = ccr;
+	nvic_iser[0] |= 1 << 10;
+
+	dma1->cselr.ch3.cs = 5; // Select 0101:LPUART1_RX
+
+	dma1->ch3.ccr.en = 1;
+	interr_dma2_ch7();
+#endif
 	lpuart1->cr1.re = 1;
 	while (!lpuart1->isr.reack);
 }
 
 extern void assert(bool); // main.c
+extern void cmd_rotate(); // cmd.c
 
 void interr_dma2_ch7()
 {
 //	io_green->odr.pin_green ^= 1;
 #ifdef CONF_L4
 	dma2->ifcr.ch7.ctcif = 1;
+#elif defined(CONF_L0)
+	dma1->ifcr.ch3.ctcif = 1;
+#endif
+	cmd_rotate();
+}
+
+int uart_readbuf_length()
+{
+#ifdef CONF_L4
+			return sizeof(uart_readbuf) - dma2->ch7.cndtr;
+#elif defined(CONF_L0)
+			return sizeof(uart_readbuf) - dma1->ch3.cndtr.ndt;
 #endif
 }
 
 void interr_lpuart1()
 {
-
+#ifdef CONF_L4
 	// lpuart1->isr.cmf		// character match flag
 	// lpuart1->icr.cmcf = 1	// reset character match flag
 	assert(lpuart1->isr.cmf); // character match flag
 	lpuart1->icr.cmcf = 1; // reset character match flag
 	io_green->odr.pin_green ^= 1;
+#endif
 }

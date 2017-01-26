@@ -1,4 +1,12 @@
 #include "conf.h"
+
+#ifndef CONF_F0
+#warning tim1-en not supported on target
+void setup_tim14() {}
+void setup_tim3() {}
+void setup_tim1() {}
+#else
+
 #include "f0-tim.h"
 #include "f0-rcc.h"
 
@@ -72,3 +80,4 @@ void setup_tim14()
 	tim14->cr1.cen = 1; /* enable */
 }
 
+#endif

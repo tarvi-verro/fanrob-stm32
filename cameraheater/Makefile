@@ -8,7 +8,7 @@ LD:=arm-none-eabi-ld
 
 # Where libgcc.a and the libnosys.a are, often times the version has to be
 # bumped.
-PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/6.2.0/armv6-m
+PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/6.3.0/armv6-m
 
 # Location of libc.a and libm.a.
 PATH_LIBNEW?=/usr/arm-none-eabi/lib/armv6-m
@@ -29,18 +29,18 @@ chkpath:
 
 SRC:=main.c early.S early_reset.c lcd-com.c font-lookup.c clock.c app-info.c \
 	app.c app-menu.c app-exposure.c kbd.c camsig.c app-heater.c heater.c \
-	decimal.c tim1-en.c app-voltm.c adc.c rcc.c uart.c
+	decimal.c tim1-en.c app-voltm.c adc.c rcc.c uart.c fanctl.c cmd.c
 
 OBJ:=$O/font-bin.o \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \
 	$(patsubst %.S, $O/%.o, $(filter %.S, $(SRC)))
 
 
-cflags:=$(CFLAGS) -g3 -O0 -mthumb -mcpu=cortex-m4 -fno-stack-protector \
+cflags:=$(CFLAGS) -g3 -O0 -mthumb -mcpu=cortex-m0 -fno-stack-protector \
 	-ffunction-sections -fdata-sections -fmessage-length=0 -Wall \
-	-fno-builtin -Wa,-mcpu=cortex-m4,-mthumb,-EL
+	-fno-builtin -Wa,-mcpu=cortex-m0,-mthumb,-EL
 
-ASFLAGS:= -g3 -mthumb -mcpu=cortex-m4 -EL
+ASFLAGS:= -g3 -mthumb -mcpu=cortex-m0 -EL
 
 LDFLAGS:=$(LDFLAGS) \
 	-L$(PATH_LIBGCC) \

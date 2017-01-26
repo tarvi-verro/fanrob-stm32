@@ -1,7 +1,14 @@
+#include "conf.h"
+
+#ifndef CONF_F0
+#warning heater not supported on target
+void setup_heater() {}
+void heater_set(uint8_t b) {}
+#else
+
 #include "f0-gpio.h"
 #include "f0-tim.h"
 #include "f0-rcc.h"
-#include "conf.h"
 #include "heater.h"
 
 extern void setup_tim14();
@@ -27,3 +34,4 @@ void heater_set(uint8_t b)
 	tim14->ccr1 = (b) * 10;
 }
 
+#endif

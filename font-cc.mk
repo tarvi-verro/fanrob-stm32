@@ -1,4 +1,6 @@
 
+B:=$(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+
 ifndef GIMP
 GIMP:=gimp
 endif
@@ -16,9 +18,9 @@ MK_FONT_TINY= \
 	) \
 	(gimp-message-set-handler 1) \
 	(convert-xcf-to-header \"$<\" \"$@\") \
-	(gimp-quit 0)" | gimp -i -b - &> $O/.aux/gimp-log && true # gimp is whiny, so give it a log file
+	(gimp-quit 0)" | gimp -i -b - &> $O/gimp-log && true # gimp is whiny, so give it a log file
 
-$O/scripts/font-tiny.h: font-tiny.xcf | $O/.aux
+$O/scripts/font-tiny.h: $B/font-tiny.xcf
 	@mkdir -p $(@D)
 ifeq ($(PRINT_PRETTY),1)
 	@printf "  GIMP\t$@\n"
@@ -27,29 +29,46 @@ else
 	$(MK_FONT_TINY)
 endif
 
-$O/scripts/font-conv: scripts/font-conv.c $O/scripts/font-tiny.h
+$O/scripts/font-conv: $B/scripts/font-conv.c $O/scripts/font-tiny.h
 	@mkdir -p $(@D)
 ifeq ($(PRINT_PRETTY),1)
 	@printf "  HOSTC\t$@\n"
-	@$(HOSTCC) -I "$O/scripts/" scripts/font-conv.c -o $@
+	@$(HOSTCC) -I "$O/scripts/" $< -o $@
 else
-	$(HOSTCC) -I "$O/scripts/" scripts/font-conv.c -o $@
+	$(HOSTCC) -I "$O/scripts/" $< -o $@
 endif
 
-MK_FONT_BIN=\
-	$O/scripts/font-conv > $O/.aux/font-tiny.bin && \
-	printf ".global font_bin\n.section .rodata\n.type font_bin, %%object\nfont_bin:\n\t.incbin \"$O/.aux/font-tiny.bin\"\n\t.align 4\n.size font_bin, .-font_bin\n" \
-		| $(AS) $(ASFLAGS) -c -o "$@" -
-
-$O/font-bin.o: $O/scripts/font-conv | $O/.aux
+$O/font-tiny.bin: $O/scripts/font-conv
 ifeq ($(PRINT_PRETTY),1)
-	@printf "  AS\t$@\n"
-	@$(MK_FONT_BIN)
+	@printf "  PIPE\t$@\n"
+	@$< > $@
 else
-	$(MK_FONT_BIN)
+	$< > $@
 endif
+
+
+ASGEN= \
+	echo '?\
+	.global font_bin ?\
+	.section .rodata ?\
+	.type font_bin, %object ?\
+	font_bin: ?\
+		.incbin "$<" ?\
+		.align 4 ?\
+	.size font_bin, .-font_bin' | tr '?' '\n' > $@
+
+$O/font-tiny.S:  $O/font-tiny.bin
+ifeq ($(PRINT_PRETTY),1)
+	@printf "  ASGEN\t$@\n"
+	@$(ASGEN)
+else
+	$(ASGEN)
+endif
+
+
+$O/font-tiny-%.o: $O/font-tiny.S
 
 clean::
-	rm -rf $O/.aux/font-tiny.bin $O/scripts/font-conv $O/font-bin.o \
-		$O/scripts/font-tiny.h $O/.aux/gimp-log
+	rm -rf $O/font-tiny.bin $O/scripts/font-conv $O/font-tiny.o \
+		$O/scripts/font-tiny.h $O/gimp-log
 

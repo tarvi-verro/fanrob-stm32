@@ -81,17 +81,17 @@ vecs:
 	.word 0			// 0x34
 	.word undef_interr	// 0x38, PendSV Handler
 	.word undef_interr	// 0x3C, SysTick Handler
-	.word undef_interr	// 0x40, WWDG
+	.word undef_interr	// 0x40, WWDG			position 0: 1 << 0
 	.word undef_interr	// 0x44, PVD through EXTI Line detection
-	.word undef_interr	// 0x48, RTC global (EXTI 17/19/20 lines) and LSE CSS through EXTI 19		1 << 2
+	.word clock_interr	// 0x48, RTC global (EXTI 17/19/20 lines) and LSE CSS through EXTI 19		1 << 2
 	.word undef_interr	// 0x4C, flash memory and data EEPROM global int.
 	.word undef_interr	// 0x50, RCC global
 	.word undef_interr	// 0x54, EXTI_0_1		1 << 5
 	.word undef_interr	// 0x58, EXTI_2_3
-	.word undef_interr	// 0x5C, EXTI_4_15		1 << 7
+	.word rpm_interr	// 0x5C, EXTI_4_15		1 << 7
 	.word 0			// 0x60, reserved
 	.word undef_interr	// 0x64, DMA1_CH1
-	.word undef_interr	// 0x68, DMA1_CH2_3
+	.word interr_dma2_ch7	// 0x68, DMA1_CH2_3		1 << 10
 	.word undef_interr	// 0x6C, DMA1_CH4_7
 	.word undef_interr	// 0x70, ADC and comparator int. through EXTI 21 & 22
 	.word undef_interr	// 0x74, LPTIMER1 int. through EXTI 29
@@ -110,7 +110,7 @@ vecs:
 	.word undef_interr	// 0xA8, SPI2 global int.
 	.word undef_interr	// 0xAC, USART1 global int. through EXTI 25
 	.word undef_interr	// 0xB0, USART2 global int. through EXTI 26
-	.word undef_interr	// 0xB4, LPUART1 global int. through EXTI 28 + AES global int.
+	.word interr_lpuart1	// 0xB4, LPUART1 global int. through EXTI 28 + AES global int.	1 << 29
 .size vecs, .-vecs
 
 	.weak undef_interr

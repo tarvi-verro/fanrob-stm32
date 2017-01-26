@@ -1,4 +1,11 @@
 #include "conf.h"
+
+#ifndef CONF_F0
+#warning camsig not supported on target
+void setup_camsig() {}
+void camsig_set(int state) {}
+#else
+
 #include "camsig.h"
 #include "f0-gpio.h"
 #include "f0-rcc.h"
@@ -20,3 +27,4 @@ void camsig_set(int state)
 		io_camsig->bsrr.reset.pin_camsig = 1;
 }
 
+#endif

@@ -1,66 +1,5 @@
 #include <stdint.h>
 
-#define CONF_L0
-
-/*
- * PA2 → lpuart1 tx
- * PA3 → lpuart1 rx
- */
-#define io_uart gpio_reg_a
-#define iop_uart_en iopaen
-#define iop_uart_rcc iopenr
-#define pin_uart_tx pin2
-#define pin_uart_rx pin3
-
-/* PC8 is the blue led */
-#define io_blue gpio_reg_c
-#define iop_blue_en iopc_en
-#define pin_blue pin8
-
-/* PB3 is LD3, green led */
-#define io_green gpio_reg_b
-#define iop_green_en iopben
-#define iop_green_rcc iopenr
-#define pin_green pin3
-
-#define io_user gpio_reg_a
-#define iop_user_en iopa_en
-#define pin_user pin0
-
-/* output signal to camera */
-#define io_camsig gpio_reg_c
-#define iop_camsig_en iopc_en
-#define pin_camsig pin3
-
-/* X1 32kHz crystal is connected to pc14 and pc15 */
-
-/* keybd; this is more hardcoded than it impresses */
-#define io_kbd gpio_reg_c
-#define iop_kbd_en iopc_en
-#define pin_up pin10
-#define pin_down pin11
-#define pin_left pin4
-#define pin_right pin5
-
-/* lcd stuff */
-#define io_lcd gpio_reg_a
-#define pin_lcd_vdd pin1
-#define pin_lcd_res pin2
-#define pin_lcd_dc pin3
-#define pin_lcd_nss pin4
-#define pin_lcd_sck pin5
-#define pin_lcd_bg pin6
-#define pin_lcd_mosi pin7
-
-#define spi_lcd spi1_reg
-#define ch_lcd ch3 /* DMA CH3 connects to spi1-tx */
-#define ch_lcdbg ch1 /* TIM3 PWM channel */
-
-/* heater wire */
-#define io_heat gpio_reg_b
-#define iop_heat_en iopb_en
-#define pin_heat pin1
-
 struct gpio_reg;
 struct rcc_reg;
 struct spi_reg;
@@ -85,11 +24,12 @@ static volatile struct gpio_reg *const gpio_reg_a = (struct gpio_reg *) 0x500000
 static volatile struct gpio_reg *const gpio_reg_b = (struct gpio_reg *) 0x50000400; // ✓
 static volatile struct gpio_reg *const gpio_reg_c = (struct gpio_reg *) 0x50000800; // ✓
 static volatile struct tim_reg *const tim1 = (struct tim_reg *) 0x40012C00;
+static volatile struct tim_reg *const tim2 = (struct tim_reg *) 0x40000000; // ✓
 static volatile struct tim_reg *const tim14 = (struct tim_reg *) 0x40002000;
 static volatile struct exti_reg *const exti = (struct exti_reg *) 0x40010400; // ✓
 static struct syscfg_reg *const syscfg = (struct syscfg_reg *) 0x40010000; // ✓
-static uint32_t *const nvic_iser = (uint32_t *) 0xe000e100;
-static uint32_t *const nvic_stir = (uint32_t *) 0xe000ef00;
+static uint32_t *const nvic_iser = (uint32_t *) 0xe000e100; // ✓
+//static uint32_t *const nvic_stir = (uint32_t *) 0xe000ef00; // ?
 static volatile struct spi_reg *const spi1_reg = (struct spi_reg *) 0x40013000;
 static struct lpuart_reg *const lpuart1 = (struct lpuart_reg *) 0x40004800; // ✓
 

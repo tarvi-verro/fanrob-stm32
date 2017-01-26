@@ -1,4 +1,12 @@
 #include "conf.h"
+
+#ifndef CONF_F0
+#warning kbd not supported on target
+void setup_kbd() {}
+void kbd_tick() {}
+void kbd_tick_slow() {}
+#else
+
 #include "f0-exti.h"
 #include "f0-rcc.h"
 #include "f0-gpio.h"
@@ -181,3 +189,5 @@ void setup_kbd()
 	nvic_iser[0] |= 1 << 7;
 
 }
+
+#endif
