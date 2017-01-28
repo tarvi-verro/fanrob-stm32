@@ -7,15 +7,15 @@ void setup_tim3() {}
 void setup_tim1() {}
 #else
 
-#include "f0-tim.h"
-#include "f0-rcc.h"
+#include "tim.h"
+#include "rcc.h"
 
 void setup_tim1()
 {
 	if (tim1->cr1.cen)
 		return;
 
-	rcc->apb2enr.tim1_en = 1;
+	rcc->apb2enr.tim1en = 1;
 
 	/* Setup tim1 */
 	tim1->arr = 2550; /* auto-reload aka period */
@@ -36,7 +36,7 @@ void setup_tim3()
 	if (tim3->cr1.cen)
 		return;
 
-	rcc->apb1enr.tim3_en = 1;
+	rcc->apb1enr.tim3en = 1;
 	/* Setup tim3 */
 	tim3->arr = 2550; /* auto-reload aka period */
 	//tim3->cnt = 500;
@@ -60,7 +60,7 @@ void setup_tim14()
 	if (tim14->cr1.cen)
 		return;
 
-	rcc->apb1enr.tim14_en = 1;
+	rcc->apb1enr.tim14en = 1;
 
 	/* Setup tim14 */
 	tim14->arr = 2550; /* auto-reload aka period */

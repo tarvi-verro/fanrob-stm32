@@ -41,9 +41,9 @@ static void lcd_bglight();
 
 void setup_lcd(void)
 {
-	rcc->apb2enr.spi1_en = 1;
-	rcc->ahbenr.iopa_en = 1;
-	rcc->ahbenr.iopc_en = 1;
+	rcc->apb2enr.spi1en = 1;
+	rcc->ahbenr.iopaen = 1;
+	rcc->ahbenr.iopcen = 1;
 
 	rcc->cfgr.p_pre = RCC_P_PRE_NONE;
 
@@ -117,7 +117,7 @@ void setup_lcd(void)
 	spi_lcd->cr2.frxth = 0; /* FRXTH, fifo reception thresh. (fxne ev) */
 
 	/* Setup DMA, */
-	rcc->ahbenr.dma_en = 1;
+	rcc->ahbenr.dmaen = 1;
 	/* TODO:
 	dma->ch_lcd.ccr.pl = 1; // priority medium
 	dma->ch_lcd.ccr.msize = DMA_MSIZE_8;

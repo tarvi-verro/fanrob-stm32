@@ -7,16 +7,16 @@ int get_temp() { return 0; }
 int get_vdda() { return 0; }
 #else
 
+#include "adc-c.h"
 #include "adc.h"
-#include "f0-adc.h"
-#include "f0-rcc.h"
+#include "rcc.h"
 #include <stdbool.h>
 #include "rcc-c.h"
 extern void assert(bool);
 
 void setup_adc()
 {
-	rcc->apb2enr.adc_en = 1;
+	rcc->apb2enr.adcen = 1;
 }
 
 static inline int vdda_from_raw(int raw)

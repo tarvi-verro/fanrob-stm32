@@ -7,10 +7,10 @@ void kbd_tick() {}
 void kbd_tick_slow() {}
 #else
 
-#include "f0-exti.h"
-#include "f0-rcc.h"
-#include "f0-gpio.h"
-#include "f0-syscfg.h"
+#include "exti.h"
+#include "rcc.h"
+#include "gpio.h"
+#include "syscfg.h"
 #include "lcd-com.h" /* bgset */
 #include <stdbool.h>
 #include "app.h"
@@ -125,32 +125,32 @@ void kbd_tick()
 
 void kbd_exti_4_15(void)
 {
-	if (exti->pr.pr10) { /* pin_up */
-		exti->pr.pr10 = 1;
+	if (exti->pr.pif10) { /* pin_up */
+		exti->pr.pif10 = 1;
 		if (io_kbd->idr.pin_up)
 			key_states_now |= EV_KEY_UP;
 		else
 			key_states_now &= ~(EV_KEY_UP);
 		key_changes |= EV_KEY_UP;
 	}
-	if (exti->pr.pr11) { /* pin_down */
-		exti->pr.pr11 = 1;
+	if (exti->pr.pif11) { /* pin_down */
+		exti->pr.pif11 = 1;
 		if (io_kbd->idr.pin_down)
 			key_states_now |= EV_KEY_DOWN;
 		else
 			key_states_now &= ~(EV_KEY_DOWN);
 		key_changes |= EV_KEY_DOWN;
 	}
-	if (exti->pr.pr4) { /* pin_left */
-		exti->pr.pr4 = 1;
+	if (exti->pr.pif4) { /* pin_left */
+		exti->pr.pif4 = 1;
 		if (io_kbd->idr.pin_left)
 			key_states_now |= EV_KEY_LEFT;
 		else
 			key_states_now &= ~(EV_KEY_LEFT);
 		key_changes |= EV_KEY_LEFT;
 	}
-	if (exti->pr.pr5) { /* pin_right */
-		exti->pr.pr5 = 1;
+	if (exti->pr.pif5) { /* pin_right */
+		exti->pr.pif5 = 1;
 		if (io_kbd->idr.pin_right)
 			key_states_now |= EV_KEY_RIGHT;
 		else
@@ -173,13 +173,13 @@ void setup_kbd()
 	io_kbd->pupdr.pin_left = GPIO_PUPDR_PULLDOWN;
 	io_kbd->pupdr.pin_right = GPIO_PUPDR_PULLDOWN;
 
-	exti->imr.mr10 = exti->imr.mr11 = exti->imr.mr4 = exti->imr.mr5 = 1;
+	exti->imr.im10 = exti->imr.im11 = exti->imr.im4 = exti->imr.im5 = 1;
 
-	exti->rtsr.tr10 = exti->rtsr.tr11 = exti->rtsr.tr4 = exti->rtsr.tr5 = 1;
+	exti->rtsr.rt10 = exti->rtsr.rt11 = exti->rtsr.rt4 = exti->rtsr.rt5 = 1;
 
 	exti->ftsr.tr10 = exti->ftsr.tr11 = exti->ftsr.tr4 = exti->ftsr.tr5 = 1;
 
-	exti->pr.pr10 = exti->pr.pr11 = exti->pr.pr4 = exti->pr.pr5 = 1;
+	exti->pr.pif10 = exti->pr.pif11 = exti->pr.pif4 = exti->pr.pif5 = 1;
 
 	syscfg->exticr2.exti4 = SYSCFG_EXTI_PC;
 	syscfg->exticr2.exti5 = SYSCFG_EXTI_PC;

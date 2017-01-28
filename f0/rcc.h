@@ -17,24 +17,24 @@ struct rcc_cfgr {
 };
 
 struct rcc_ahbenr {
-	uint32_t dma_en : 1, : 1, sram_en : 1, : 1, flitf_en : 1, : 1,
-		 crc_en : 1, : 10, iopa_en : 1, iopb_en : 1, iopc_en : 1,
-		 iopd_en : 1, : 1, iopf_en : 1, : 9;
+	uint32_t dmaen : 1, : 1, sramen : 1, : 1, flitfen : 1, : 1,
+		 crcen : 1, : 10, iopaen : 1, iopben : 1, iopcen : 1,
+		 iopden : 1, : 1, iopfen : 1, : 9;
 
 };
 
 struct rcc_apb2enr {
-	uint32_t syscfg_en : 1, : 4, usart6_en : 1, : 3, adc_en : 1, : 1,
-		 tim1_en : 1, spi1_en : 1, : 1, usart1_en : 1, : 1,
-		 tim15_en : 1, tim16_en : 1, tim17_en : 1, : 3, dbgmcu_en : 1,
+	uint32_t syscfgen : 1, : 4, usart6en : 1, : 3, adcen : 1, : 1,
+		 tim1en : 1, spi1en : 1, : 1, usart1en : 1, : 1,
+		 tim15en : 1, tim16en : 1, tim17en : 1, : 3, dbgmcuen : 1,
 		 : 9;
 };
 
 struct rcc_apb1enr {
-	uint32_t : 1, tim3_en : 1, : 2, tim6_en : 1, tim7_en : 1, : 2,
-		 tim14_en : 1, : 2, wwdg_en : 1, : 2, spi2_en : 1, : 2,
-		 usart2_en : 1, usart3_en : 1, usart4_en : 1, usart5_en : 1,
-		 i2c1_en : 1, i2c2_en : 1, usb_en : 1, : 4, pwr_en : 1, : 3;
+	uint32_t : 1, tim3en : 1, : 2, tim6en : 1, tim7en : 1, : 2,
+		 tim14en : 1, : 2, wwdgen : 1, : 2, spi2en : 1, : 2,
+		 usart2en : 1, usart3en : 1, usart4en : 1, usart5en : 1,
+		 i2c1en : 1, i2c2en : 1, usben : 1, : 4, pwren : 1, : 3;
 };
 
 
@@ -46,7 +46,7 @@ enum {
 };
 struct rcc_bdcr {
 	uint32_t lseon : 1, lserdy : 1, lsebyp : 1, lsedrv : 2, : 3,
-		 rtcsel : 2, : 5, rtc_en : 1, bdrst : 1, : 15;
+		 rtcsel : 2, : 5, rtcen : 1, bdrst : 1, : 15;
 };
 
 struct rcc_csr {

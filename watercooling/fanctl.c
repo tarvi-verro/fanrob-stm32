@@ -104,7 +104,7 @@ void rpm_collect_1hz()
 	rpm_counter_previous = z;
 }
 
-void rpm_interr()
+void i_exti_4_15()
 {
 	rpm_counter++;
 	exti->pr.pif12 = 1;
@@ -139,42 +139,42 @@ void fanctl_cmd(char *cmd, int len)
 	switch (*cmd) {
 	case 'f':
 		if (len <= 2 || cmd[1] != ' ') {
-			uart_print("Expected a speed [0:255].\r\n");
+			uart_puts("Expected a speed [0:255].\r\n");
 			return;
 		}
 		int sum = parseBase10(cmd + 2, len - 2);
 		if (sum > 255) {
-			uart_print("Speed must be between [0:255]!\r\n");
+			uart_puts("Speed must be between [0:255]!\r\n");
 			return;
 		}
 		fanctl_setspeed(sum);
-		uart_print("Set speed ");
-		uart_send_byte('0' + sum/100);
-		uart_send_byte('0' + (sum/10) % 10);
-		uart_send_byte('0' + (sum/1) % 10);
-		uart_print("\r\n");
+		uart_puts("Set speed ");
+		uart_putc('0' + sum/100);
+		uart_putc('0' + (sum/10) % 10);
+		uart_putc('0' + (sum/1) % 10);
+		uart_puts("\r\n");
 
 		break;
 	case 'R':
-		uart_print("RPM counter:");
-		uart_print_int(rpm_counter);
-		uart_print(", 1Hz delta: ");
-		uart_print_int(30*rpm_counter_delta/2);
-		uart_print("\r\n");
+		uart_puts("RPM counter:");
+		uart_puts_int(rpm_counter);
+		uart_puts(", 1Hz delta: ");
+		uart_puts_int(30*rpm_counter_delta/2);
+		uart_puts("\r\n");
 		break;
 	case 'r':
 		if (len <= 2 || cmd[1] != ' ') {
-			uart_print("Expected a speed.\r\n");
+			uart_puts("Expected a speed.\r\n");
 			return;
 		}
 		sum = parseBase10(cmd + 2, len - 2);
 		if ((sum % 15) != 0) {
-			uart_print("Must be a multiple of 15!\r\n");
+			uart_puts("Must be a multiple of 15!\r\n");
 			return;
 		}
-		uart_print("Setting by RPM: ");
-		uart_print_int(sum);
-		uart_print("\r\n");
+		uart_puts("Setting by RPM: ");
+		uart_puts_int(sum);
+		uart_puts("\r\n");
 		rpm_target_delta = sum/15;
 		//tim2->ccr3 = 40;
 		break;

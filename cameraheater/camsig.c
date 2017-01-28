@@ -7,8 +7,8 @@ void camsig_set(int state) {}
 #else
 
 #include "camsig.h"
-#include "f0-gpio.h"
-#include "f0-rcc.h"
+#include "gpio.h"
+#include "rcc.h"
 
 void setup_camsig()
 {

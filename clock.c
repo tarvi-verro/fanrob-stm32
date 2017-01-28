@@ -13,15 +13,10 @@ extern void assert(bool);
 
 void (*alarm_callb)() = NULL;
 
-#if 0
-void clock_exti_rtc()
+#if 1
+void i_rtc_alra()
 {
-#ifdef CONF_F0
-	exti->pr.pr17 = 1; /* writing 1 clears bit */
-#elif defined(CONF_L0)
 	exti->pr.pif17 = 1; /* writing 1 clears bit */
-#endif
-	assert(rtc->isr.alraf);
 	rtc->isr.alraf = 0;
 	if (alarm_callb == NULL)
 		return;
@@ -131,7 +126,7 @@ void setup_clock(void)
 	while (!rcc->apb1enr1.pwren);
 
 	pwr->cr1.dbp = 1;
-#elif defined(CONF_L0)
+#elif defined(CONF_L0) || defined(CONF_F0)
 	rcc->apb1enr.pwren = 1;
 	while (!rcc->apb1enr.pwren);
 
@@ -150,18 +145,27 @@ void setup_clock(void)
 
 	clock_init_wuk();
 
-#ifdef CONF_L4
+#ifndef CONF_L0
 	rcc->bdcr.rtcen = 1;
-#elif defined(CONF_L0)
+#else
 	rcc->csr.rtcen = 1;
 #endif
 
-	/* Enable RTC interrupts
-	 * "RTC Interrupts (combined EXTI lines 17, 19, and 20)" */
-	//exti->imr.mr19 = exti->imr.mr20 = exti->imr.mr17 = 1;
-	//exti->rtsr.tr19 = exti->rtsr.tr20 = exti->rtsr.tr17 = 1;
-	//exti->pr.pr19 = exti->pr.pr20 = exti->pr.pr17 = 1;
-	//nvic_iser[0] |= 1 << 2;
+	/*
+	 * Enable RTC interrupts
+	 * On F0, L0 and L4:
+	 * exti 17: alr
+	 * exti 20: wut
+	 */
+	exti->imr.im20 = exti->imr.im17 = 1;
+	exti->rtsr.rt20 = exti->rtsr.rt17 = 1;
+	exti->pr.pif20 = exti->pr.pif17 = 1;
+#ifdef CONF_L4
+	nvic_iser[0] |= 1 << 3; // wut
+	nvic_iser[1] |= 1 << 9; // alr
+#else
+	nvic_iser[0] |= 1 << 2; // glob
+#endif
 
 	if (rtc->isr.inits) /* already setup */
 		return;
@@ -185,17 +189,17 @@ void setup_clock(void)
 
 	/* load initial date/time */
 	struct rtc_tr a = {
-		.su = 1,	.st = 3,
-		.mnu = 7,	.mnt = 3,
-		.hu = 2,	.ht = 0,
+		.st = 3,	.su = 1,
+		.mnt = 3,	.mnu = 7,
+		.ht = 0,	.hu = 2,
 		.pm = RTC_PM_24H,
 	};
 	rtc->tr = a;
 	struct rtc_dr b = {
-		.du = 1,	.dt = 3,
-		.mu = 5,	.mt = 0,
+		.dt = 3,	.du = 1,
+		.mt = 0,	.mu = 5,
 		.wdu = 7,
-		.yu = 5,	.yt = 1,
+		.yt = 1,	.yu = 5,
 	};
 	rtc->dr = b;
 
@@ -223,8 +227,9 @@ static unsigned seconds = 0;
 
 void clock_cmd(char *cmd, int len)
 {
+	assert(*cmd == 'c');
 	if (len < 2) {
-		uart_print("Say cg(et) or cs(et) instead.\r\n");
+		uart_puts("Say cg(et) or cs(et) instead.\r\n");
 		return;
 	}
 
@@ -240,24 +245,46 @@ void clock_cmd(char *cmd, int len)
 			'0' + time.st, '0' + time.su,
 			'\r', '\n'
 		};
-		uart_print(out);
+		uart_puts(out);
 	} else if (cmd[1] == 's') {
-		uart_print("Functionality coming reel suun.\r\n");
+		uart_puts("Functionality coming reel suun.\r\n");
 	} else if (cmd[1] == 'n') {
-		uart_print("Seconds since startup: ");
-		uart_print_int(seconds);
-		uart_print("\r\n");
+		uart_puts("Seconds since startup: ");
+		uart_puts_int(seconds);
+		uart_puts("\r\n");
 	}
 }
 
-void rpm_collect_1hz();
+__attribute__ ((weak)) void rpm_collect_1hz() {}
+__attribute__ ((weak)) void i_rtc_alrb() {}
 
-void clock_interr()
+static void i_rtc_wut()
 {
 	rtc->isr.wutf = 0;
 	exti->pr.pif20 = 1;
 	seconds++;
 	rpm_collect_1hz();
-//	rtc->isr.alraf = 0;
 }
+
+#ifdef CONF_L4
+void i_rtc_alr()
+{
+	if (rtc->isr.alraf)
+		i_rtc_alra();
+	if (rtc->isr.alrbf)
+		i_rtc_alrb();
+}
+#else
+void i_rtc_global()
+{
+	if (rtc->isr.wutf)
+		i_rtc_wut();
+	if (rtc->isr.alraf)
+		i_rtc_alra();
+#ifdef CONF_L0
+	if (rtc->isr.alrbf)
+		i_rtc_alrb();
+#endif
+}
+#endif
 

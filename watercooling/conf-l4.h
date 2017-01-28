@@ -23,13 +23,12 @@
 //#define iop_fanctl_rcc iopenr
 //#define pin_fan1_ctl pin0
 
-/* PC8 is the blue led */
-#define io_blue gpio_reg_c
-#define iop_blue_en iopc_en
-#define pin_blue pin8
-
 /* PB3 is LD3, green led */
 #define io_green gpio_reg_b
 #define iop_green_en gpioben
 #define iop_green_rcc ahb2enr
 #define pin_green pin3
+
+/* Configure uart.c */
+#define ic_dma_receiver i_dma2_ch7
+

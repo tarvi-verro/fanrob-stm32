@@ -1,4 +1,17 @@
 #include "conf.h"
+
+#ifdef CONF_F0
+#warning uart not supported on target
+int uart_readbuf_length() { return 0; }
+void uart_puts_visible(const char *s) {}
+void uart_putc(char c) {}
+void uart_puts(const char *s) {}
+void uart_puts_int(unsigned z) {}
+
+void setup_uart() {}
+#else
+
+
 #include "lpuart.h"
 #include "exti.h"
 #include "rcc.h"
@@ -38,27 +51,27 @@ static void setup_uart_pins()
 
 }
 
-void uart_print_visible(const char *s)
+void uart_puts_visible(const char *s)
 {
 	for (; *s != '\0'; s++) {
 		char z = *s;
 		if ((z >= 'A' && z <= 'Z') || (z >= 'a' && z <= 'z') || (z >= '0' && z <= '9')
 				|| z == ' ' || z == '!' || z == '@' || z == '$' || z == '?' || z == '[' || z == ']') {
-			uart_send_byte(*s);
+			uart_putc(*s);
 			continue;
 		}
-		uart_send_byte('\\');
-		uart_send_byte('x');
+		uart_putc('\\');
+		uart_putc('x');
 		char h = (z & 0xf0) >> 4;
 		char l = z & 0xf;
-		if (h > 9)	uart_send_byte('a' + (h % 10));
-		else		uart_send_byte('0' + h);
-		if (l > 9)	uart_send_byte('a' + (l % 10));
-		else		uart_send_byte('0' + l);
+		if (h > 9)	uart_putc('a' + (h % 10));
+		else		uart_putc('0' + h);
+		if (l > 9)	uart_putc('a' + (l % 10));
+		else		uart_putc('0' + l);
 	}
 }
 
-void uart_print_int(unsigned z)
+void uart_puts_int(unsigned z)
 {
 	char buf[sizeof("4294967295")];
 	int j = 0;
@@ -69,16 +82,16 @@ void uart_print_int(unsigned z)
 			break;
 	}
 	for (int i = j - 1; i >= 0; i--)
-		uart_send_byte('0' + buf[i]);
+		uart_putc('0' + buf[i]);
 }
 
-void uart_print(const char *s)
+void uart_puts(const char *s)
 {
 	for (; *s != '\0'; s++)
-		uart_send_byte(*s);
+		uart_putc(*s);
 }
 
-void uart_send_byte(uint8_t byte)
+void uart_putc(char c)
 {
 	//while(!lpuart1->isr.idle);
 	//while (!lpuart1->isr.fe);
@@ -89,7 +102,7 @@ void uart_send_byte(uint8_t byte)
 	lpuart1->cr1.te = 1;
 	//while (!lpuart1->isr.teack);
 	while (!lpuart1->isr.txe);
-	lpuart1->tdr.tdr = byte;
+	lpuart1->tdr.tdr = c;
 	while (!lpuart1->isr.txe);
 	lpuart1->cr1.te = 0;
 	while (!lpuart1->isr.tc);
@@ -190,7 +203,7 @@ void setup_uart()
 	lpuart1->cr2.add_0 = '\r' & 0x0f;
 	lpuart1->cr2.add_1 = ('\r' & 0xf0) >> 4;
 	lpuart1->cr1.cmie = 1; // enable character match interrupt
-	nvic_iser[6] |= 1 << 6;
+	nvic_iser[2] |= 1 << 6;
 #elif defined(CONF_L0)
 	/*
 	 * For some reason on L0 setting cmie enables tcie. Also the character
@@ -250,7 +263,6 @@ void setup_uart()
 	dma2->cselr.ch7.cs = 4; // Select 0100:LPUART_RX
 
 	dma2->ch7.ccr.en = 1;
-	interr_dma2_ch7();
 #elif defined(CONF_L0)
 	dma1->ch3.ccr = ccr;
 	nvic_iser[0] |= 1 << 10;
@@ -258,7 +270,6 @@ void setup_uart()
 	dma1->cselr.ch3.cs = 5; // Select 0101:LPUART1_RX
 
 	dma1->ch3.ccr.en = 1;
-	interr_dma2_ch7();
 #endif
 	lpuart1->cr1.re = 1;
 	while (!lpuart1->isr.reack);
@@ -267,7 +278,7 @@ void setup_uart()
 extern void assert(bool); // main.c
 extern void cmd_rotate(); // cmd.c
 
-void interr_dma2_ch7()
+void ic_dma_receiver()
 {
 //	io_green->odr.pin_green ^= 1;
 #ifdef CONF_L4
@@ -287,7 +298,7 @@ int uart_readbuf_length()
 #endif
 }
 
-void interr_lpuart1()
+void i_lpuart1()
 {
 #ifdef CONF_L4
 	// lpuart1->isr.cmf		// character match flag
@@ -297,3 +308,5 @@ void interr_lpuart1()
 	io_green->odr.pin_green ^= 1;
 #endif
 }
+
+#endif

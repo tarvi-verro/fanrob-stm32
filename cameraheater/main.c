@@ -1,22 +1,19 @@
 #include <stdint.h>
 #include "tim.h"
-#include "lpuart.h"
 #include "dma.h"
 #include <stdbool.h>
 #include "gpio.h"
 #include "rcc.h"
-#include "f0-spi.h"
+#include "spi.h"
 #include "conf.h"
 #include "app.h"
 #include "kbd.h"
-#include "adc.h"
+#include "adc-c.h"
 #include "uart.h"
 #include "camsig.h"
 #include "heater.h"
 
 void assert(bool);
-void setup_fanctl(); /* fanctl.c */
-void fanctl_setspeed(uint8_t speed);
 
 #define lcd 1
 #ifdef lcd
@@ -28,11 +25,11 @@ void fanctl_setspeed(uint8_t speed);
 #include "clock.h"
 #endif
 
-#if 0
 void setup_usrbtn(void)
-{ // TODO: porting, a lot of it required
+{
+#ifdef io_user
 	uint32_t t;
-	//rcc->ahbenr.iop_user_en = 1;
+	rcc->ahbenr.iop_user_en = 1;
 	rcc->apb2enr.syscfgen = 1;
 
 	io_user->moder.pin_user = GPIO_MODER_IN;
@@ -56,26 +53,28 @@ void setup_usrbtn(void)
 	syscfg_int[2] = t;
 
 	nvic_iser[0] |= 1 << 5;
-
-}
 #endif
+}
 
 void setup_leds(void)
 {
-	//rcc->ahbenr.iop_blue_en = 1;
 	rcc->iop_green_rcc.iop_green_en = 1;
 
 	io_green->moder.pin_green = GPIO_MODER_OUT;
-	//io_blue->moder.pin_blue = GPIO_MODER_OUT;
 
 	io_green->ospeedr.pin_green = GPIO_OSPEEDR_LOW;
-	//io_blue->ospeedr.pin_blue = GPIO_OSPEEDR_LOW;
 
 	io_green->otyper.pin_green = GPIO_OTYPER_PP;
-	//io_blue->otyper.pin_blue = GPIO_OTYPER_PP;
 
 	io_green->bsrr.reset.pin_green = 1;
-	//io_blue->bsrr.reset.pin_blue = 1;
+
+#ifdef io_blue
+	rcc->ahbenr.iop_blue_en = 1;
+	io_blue->moder.pin_blue = GPIO_MODER_OUT;
+	io_blue->ospeedr.pin_blue = GPIO_OSPEEDR_LOW;
+	io_blue->otyper.pin_blue = GPIO_OTYPER_PP;
+	io_blue->bsrr.reset.pin_blue = 1;
+#endif
 }
 
 static int somec = 0;
@@ -85,8 +84,8 @@ void undef_interr()
 	assert(false);
 }
 
-#if 0
-void nvic_exti_0_1(void)
+#if 1
+void i_exti_0_1(void)
 {
 	exti_int[5] |= (1); /* EXTI_PR */
 	if (somec)
@@ -116,79 +115,15 @@ void assert(bool cnd)
 void (*app_update)() = NULL;
 
 
-#if 0
-int alt(void)
-{
-	//io_uart->afr.pin_uart_tx = 8;
-	//io_uart->afr.pin_uart_rx = 8;
-
-	rcc->ahb2enr.iop_uart_en = 1;
-
-
-	io_uart->moder.pin_uart_tx = GPIO_MODER_OUT;
-	//io_uart->moder.pin_uart_rx = GPIO_MODER_OUT;
-
-	io_uart->ospeedr.pin_uart_tx = GPIO_OSPEEDR_LOW;
-	//io_uart->ospeedr.pin_uart_rx = GPIO_OSPEEDR_HIGH;
-
-	io_uart->otyper.pin_uart_tx = GPIO_OTYPER_PP;
-	//io_uart->otyper.pin_uart_rx = GPIO_OTYPER_OD;
-
-	//io_uart->pupdr.pin_uart_tx = GPIO_PUPDR_PULLUP;
-	//io_uart->pupdr.pin_uart_rx = GPIO_PUPDR_PULLUP;
-
-	io_uart->bsrr.reset.pin_uart_tx = 1;
-
-	int cnt = 0;
-	while (1) {
-		cnt++;
-		if (cnt % 0x40000 == 0x0) {
-			io_green->odr.pin_green ^= 1;
-			io_uart->odr.pin_uart_tx ^= 1;
-			//io_green->bsrr.reset.pin_green = 1;
-	//		uart_send_byte('x');
-		} else if (cnt % 0x20000 == 0x0) {
-			//io_green->odr.pin_green ^= 1;
-			io_uart->odr.pin_uart_tx ^= 1;
-			//io_green->bsrr.set.pin_green = 1;
-	//		uart_send_byte('o');
-		}
-	}
-}
-#endif
-
 extern void cmd_check(); /* cmd.c */
 
 int main(void)
 {
-	int cnt = 0;
 	setup_leds();
-	//alt();
+	setup_usrbtn();
 #ifdef clock
 	setup_clock();
 #endif
-	setup_fanctl();
-	setup_uart();
-	uart_print("\r\n\nChip has been restarted!\r\n");
-	fanctl_setspeed(244);
-	while (1) {
-		cnt++;
-		cmd_check();
-		if (cnt % 0x10000 == 0x0)
-			; // fanctl_setspeed((cnt / 0x10000) % 256);
-		if (cnt % 0x80000 == 0x0) {
-			io_green->bsrr.reset.pin_green = 1;
-		} else if (cnt % 0x40000 == 0x0) {
-			io_green->bsrr.set.pin_green = 1;
-			//uart_send_byte('\r');
-			//uart_send_byte('\n');
-		}
-		if (cnt % 0x10000 == 0x0) {
-		//	uart_send_byte(' ');
-		}
-	}
-	setup_leds();
-	//setup_usrbtn();
 #ifdef lcd
 	setup_lcd();
 	app_push(&app_info);
@@ -219,8 +154,10 @@ int main(void)
 		if (app_update != NULL)
 			app_update();
 
+#ifdef io_blue
 		if (io_green->odr.pin_green)
 			io_blue->odr.pin_blue ^= 1;
+#endif
 	}
 }
 

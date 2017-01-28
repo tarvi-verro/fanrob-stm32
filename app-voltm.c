@@ -3,7 +3,7 @@
 #include "app.h"
 #include <stddef.h>
 #include "rcc-c.h"
-#include "adc.h"
+#include "adc-c.h"
 #include "decimal.h"
 
 static void draw(int all)
@@ -19,7 +19,7 @@ static void draw(int all)
 	lcd_setcaret(LCD_WIDTH - 3 - 4 * 5, 1);
 
 	int t = get_temp();
-	print_decimal(t, 2);
+	print_decimal(lcd_putc, t, 2);
 	lcd_puts("\tc");
 
 	// VDDA
@@ -29,7 +29,7 @@ static void draw(int all)
 	int v = get_vdda();
 	int xn = decimal_length(v);
 	lcd_setcaret(LCD_WIDTH - 3 - (xn + 2) * 5, 2);
-	print_decimal_fixpt(v, xn, 3, 1000);
+	print_decimal_fixpt(lcd_putc, v, xn, 3, 1000);
 	lcd_putc('v');
 }
 

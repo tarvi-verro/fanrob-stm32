@@ -11,4 +11,5 @@ extern void clock_alarm(struct rtc_alrmar alrm, struct rtc_alrmassr ss,
 		void (*cb)());
 
 extern void clock_alarm_stop(void (*cb)());
+extern void clock_cmd(char *cmd, int len);
 

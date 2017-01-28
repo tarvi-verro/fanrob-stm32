@@ -1,9 +1,9 @@
 
-#include "conf.h"
+#include "regs.h"
+#include "cmd.h"
 #include "uart.h"
 #include "dma.h"
-
-static void cmd_handle();
+#include "fanctl.h"
 
 extern char uart_readbuf[14]; /* uart.c */
 
@@ -34,7 +34,7 @@ static int eat_next = 0;
 static int cmd_check_wlen(int len)
 {
 	if (lostsome) {
-		uart_print("\r\nWhoa who, slow down there cowboy!\r\n");
+		uart_puts("\r\nWhoa who, slow down there cowboy!\r\n");
 		lostsome = 0;
 		parsedTo = len;
 		return 0;
@@ -48,30 +48,31 @@ static int cmd_check_wlen(int len)
 			eat_next--;
 			continue;
 		} else if (b == '\r') {
-			uart_print("\r\n");
+			uart_puts("\r\n");
+			cmd[cmd_len] = '\0';
 			cmd_handle(cmd,cmd_len);
 			cmd_len = 0;
 			continue;
 		} else if (b == 0x03) { /* Ctrl+C */
-			uart_print("^C\r\n");
+			uart_puts("^C\r\n");
 			cmd_len = 0;
 			continue;
 		} else if (b == 0x7f && cmd_len) { /* Backspace */
 			cmd_len--;
-			uart_print("\x08 \x08"); // Output ^H
+			uart_puts("\x08 \x08"); // Output ^H
 			continue;
 		} else if (b == 0x1b) {
-			uart_print("\\x1b");
+			uart_puts("\\x1b");
 			continue;
 		}
-		uart_send_byte(b);
+		uart_putc(b);
 		if (b != 0) {
 			cmd[cmd_len] = b;
 			cmd_len++;
 		}
 
 		if (cmd_len == sizeof(cmd) - 1) {
-			uart_print("\r\nToo long a command!\r\n");
+			uart_puts("\r\nToo long a command!\r\n");
 			goto abort;
 		}
 	}
@@ -89,42 +90,13 @@ void cmd_rotate()
 	rotatedAt = uart_readbuf_length();
 }
 
-extern void fanctl_cmd(char *cmd, int len);
 extern void clock_cmd(char *cmd, int len);
 
-extern void uart_print_visible(char *s);
-static void cmd_handle(char *cmd, int len)
+ __attribute__ ((weak)) void cmd_handle(char *cmd, int len)
 {
-	if (len < 1)
-		return;
-
-	cmd[len] = '\0';
-	switch (*cmd) {
-	case 'c':
-		clock_cmd(cmd, len);
-		break;
-	case 'f':
-	case 'R':
-	case 'r':
-		fanctl_cmd(cmd, len);
-		break;
-	case '?':
-		uart_print("List of commands:\r\n"
-				"\tc*: clock (get,set)\r\n"
-				"\tcn: seconds since startup\r\n"
-				"\tf: set fan speed cycle\r\n"
-				"\tR: get RPM counter\r\n"
-				"\tr: set target RPM"
-				"\t?: display this\r\n");
-		break;
-	default:
-		uart_print("Unknown command. '?' for help.\r\n");
-#if 1
-		uart_print("Full command: \"");
-		uart_print_visible(cmd);
-		uart_print("\"\r\n");
-#endif
-
-	}
-
+	uart_puts("Full command: \"");
+	uart_puts_visible(cmd);
+	uart_puts("\"\r\n");
 }
+
+

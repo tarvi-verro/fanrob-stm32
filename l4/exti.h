@@ -3,19 +3,19 @@
 #include <stddef.h>
 
 struct exti_imr1 {
-	uint32_t mr0 : 1, mr1 : 1, mr2 : 1, mr3 : 1, mr4 : 1, mr5 : 1, mr6 : 1,
-		 mr7 : 1, mr8 : 1, mr9 : 1, mr10 : 1, mr11 : 1, mr12 : 1,
-		 mr13 : 1, mr14 : 1, mr15 : 1, mr16 : 1, mr17 : 1, mr18 : 1,
-		 mr19 : 1, mr20 : 1, mr21 : 1, mr22 : 1, mr23 : 1, mr24 : 1,
-		 mr25 : 1, mr26 : 1, mr27 : 1, mr28 : 1, : 2, mr31 : 1;
+	uint32_t im0 : 1, im1 : 1, im2 : 1, im3 : 1, im4 : 1, im5 : 1, im6 : 1,
+		 im7 : 1, im8 : 1, im9 : 1, im10 : 1, im11 : 1, im12 : 1,
+		 im13 : 1, im14 : 1, im15 : 1, im16 : 1, im17 : 1, im18 : 1,
+		 im19 : 1, im20 : 1, im21 : 1, im22 : 1, im23 : 1, im24 : 1,
+		 im25 : 1, im26 : 1, im27 : 1, im28 : 1, : 2, im31 : 1;
 };
 
 struct exti_emr1 {
-	uint32_t mr0 : 1, mr1 : 1, mr2 : 1, mr3 : 1, mr4 : 1, mr5 : 1, mr6 : 1,
-		 mr7 : 1, mr8 : 1, mr9 : 1, mr10 : 1, mr11 : 1, mr12 : 1,
-		 mr13 : 1, mr14 : 1, mr15 : 1, mr16 : 1, mr17 : 1, mr18 : 1,
-		 mr19 : 1, mr20 : 1, mr21 : 1, mr22 : 1, mr23 : 1, mr24 : 1,
-		 mr25 : 1, mr26 : 1, mr27 : 1, mr28 : 1, : 2, mr31 : 1;
+	uint32_t em0 : 1, em1 : 1, em2 : 1, em3 : 1, em4 : 1, em5 : 1, em6 : 1,
+		 em7 : 1, em8 : 1, em9 : 1, em10 : 1, em11 : 1, em12 : 1,
+		 em13 : 1, em14 : 1, em15 : 1, em16 : 1, em17 : 1, em18 : 1,
+		 em19 : 1, em20 : 1, em21 : 1, em22 : 1, em23 : 1, em24 : 1,
+		 em25 : 1, em26 : 1, em27 : 1, em28 : 1, : 2, em31 : 1;
 };
 
 struct exti_rtsr1 {

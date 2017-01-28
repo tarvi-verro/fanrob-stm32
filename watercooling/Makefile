@@ -1,6 +1,3 @@
-# TODO:
-#  - refactor early.S (nvic table entries should be project indep)
-#
 
 HOSTCC:=gcc
 
@@ -26,15 +23,14 @@ PRINT_PRETTY:=1
 endif
 
 l0: $O/prg-l0
+l4: $O/prg-l4
 
 chkpath:
 	@[ -d $(PATH_LIBGCC) ]
 	@[ -d $(PATH_LIBNEW) ]
 
-SRC:=font-tiny.xcf main.c ../l0/early.S ../early_reset.c ../lcd-com.c \
-	../font-lookup.c ../clock.c ../app-info.c ../app.c ../app-menu.c \
-	../kbd.c ../decimal.c ../tim1-en.c ../app-voltm.c ../adc.c ../rcc.c \
-	../uart.c fanctl.c ../cmd.c
+SRC:=main.c ../l0/early.S ../early_reset.c ../clock.c ../kbd.c ../decimal.c \
+	../adc.c ../rcc.c ../uart.c fanctl.c ../cmd.c cmd_handler.c ../font-tiny.xcf
 
 OBJ:= \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \
@@ -63,5 +59,5 @@ $O/.aux: | $O
 clean::
 	rm -rf $(OBJ) $O/prg
 
-.PHONY: clean all chkpath
+.PHONY: clean all chkpath l0 l4
 

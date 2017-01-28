@@ -36,13 +36,13 @@ static void upd_conf(enum conf_id cnf)
 		xn = decimal_length(heat_voltage);
 		lcd_setcaret(LCD_WIDTH - 3 - ((xn + 2) * 5), CONF_VOLTAGE);
 		lcd_putc(' ');
-		print_decimal_fixpt(heat_voltage, xn, 1, 10);
+		print_decimal_fixpt(lcd_putc, heat_voltage, xn, 1, 10);
 		break;
 	case CONF_WATT:
 		xn = decimal_length(heat_watt);
 		lcd_setcaret(LCD_WIDTH - 3 - ((xn + 2) * 5), CONF_WATT);
 		lcd_putc(' ');
-		print_decimal_fixpt(heat_watt, xn, 1, 10);
+		print_decimal_fixpt(lcd_putc, heat_watt, xn, 1, 10);
 		break;
 	case CONF_USED:
 		break;
