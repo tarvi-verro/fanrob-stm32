@@ -118,20 +118,18 @@ void setup_lcd(void)
 
 	/* Setup DMA, */
 	rcc->ahbenr.dmaen = 1;
-	/* TODO:
-	dma->ch_lcd.ccr.pl = 1; // priority medium
+	dma->ch_lcd.ccr.pl = 1; /* priority medium */
 	dma->ch_lcd.ccr.msize = DMA_MSIZE_8;
 	dma->ch_lcd.ccr.psize = DMA_PSIZE_8;
 	dma->ch_lcd.ccr.dir = DMA_DIR_FMEM;
-	dma->ch_lcd.ccr.circ = 0; // circular mode
-	dma->ch_lcd.ccr.minc = 1; // increment memory addr
-	dma->ch_lcd.ccr.pinc = 0; // periperal address does not change
-	dma->ch_lcd.ccr.htie = 0; // half-transfter interrupt
-	dma->ch_lcd.ccr.tcie = 0; // transfer complete interrupt
-	dma->ch_lcd.ccr.teie = 0; // transfer error interrupt
+	dma->ch_lcd.ccr.circ = 0; /* circular mode */
+	dma->ch_lcd.ccr.minc = 1; /* increment memory addr */
+	dma->ch_lcd.ccr.pinc = 0; /* periperal address does not change */
+	dma->ch_lcd.ccr.htie = 0; /* half-transfter interrupt */
+	dma->ch_lcd.ccr.tcie = 0; /* transfer complete interrupt */
+	dma->ch_lcd.ccr.teie = 0; /* transfer error interrupt */
 	dma->ch_lcd.pa = (uint32_t) &spi_lcd->dr;
 	//dma->ch_lcd.ma = (uint32_t) 0;
-	*/
 
 	/* Initialisation sequence */
 	int i;
@@ -174,16 +172,14 @@ void lcd_repeat(uint8_t x, int n)
 	assert(n > 0 && n <= (LCD_WIDTH*LCD_HEIGHT/8)); /* sanity check */
 	/* Clear all of lcd with some magic */
 	io_lcd->bsrr.set.pin_lcd_dc = 1; /* data */
-	/* TODO:
-	dma->ch_lcd.ccr.minc = 0; // no memory increment
-	dma->ch_lcd.ma = (uint32_t) &x; // send this over and over again
-	dma->ch_lcd.ndt = n; // this many times
+	dma->ch_lcd.ccr.minc = 0; /* no memory increment */
+	dma->ch_lcd.ma = (uint32_t) &x; /* send this over and over again */
+	dma->ch_lcd.ndt = n; /* this many times */
 
 	dma->ch_lcd.ccr.en = 1;
 	while (dma->ch_lcd.ndt);
 	dma->ch_lcd.ccr.en = 0;
-	dma->ch_lcd.ccr.minc = 1; // reset correct setting
-	*/
+	dma->ch_lcd.ccr.minc = 1; /* reset correct setting */
 }
 
 void lcd_clear()
@@ -199,7 +195,7 @@ void lcd_send(bool data_mode /* false:command mode */,
 	assert(spi_lcd->sr.txe);
 	assert(!spi_lcd->sr.modf);
 	assert(l > 0);
-	// TODO: assert(!dma->ch_lcd.ccr.en || dma->isr.ch_lcd.tcif);
+	assert(!dma->ch_lcd.ccr.en || dma->isr.ch_lcd.tcif);
 
 	if (data_mode)
 		io_lcd->bsrr.set.pin_lcd_dc = 1;
@@ -214,14 +210,12 @@ void lcd_send(bool data_mode /* false:command mode */,
 			while (spi_lcd->sr.bsy);
 		}
 	} else {
-		/* TODO:
 		dma->ch_lcd.ma = (uint32_t) a;
 		dma->ch_lcd.ndt = l;
 		dma->ch_lcd.ccr.en = 1;
 		while (dma->ch_lcd.ndt);
 		dma->ch_lcd.ccr.en = 0;
 		dma->ifcr.ch_lcd.ctcif = 1;
-		*/
 	}
 
 	while (spi_lcd->sr.bsy);

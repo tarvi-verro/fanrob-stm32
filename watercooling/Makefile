@@ -29,7 +29,7 @@ chkpath:
 	@[ -d $(PATH_LIBGCC) ]
 	@[ -d $(PATH_LIBNEW) ]
 
-SRC:=main.c ../l0/early.S ../early_reset.c ../clock.c ../kbd.c ../decimal.c \
+SRC:=main.c ../l0/early.S ../early_reset.c ../clock.c ../decimal.c \
 	../adc.c ../rcc.c ../uart.c fanctl.c ../cmd.c cmd_handler.c ../font-tiny.xcf
 
 OBJ:= \

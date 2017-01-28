@@ -123,7 +123,7 @@ void kbd_tick()
 	}
 }
 
-void kbd_exti_4_15(void)
+void i_exti_4_15(void)
 {
 	if (exti->pr.pif10) { /* pin_up */
 		exti->pr.pif10 = 1;
