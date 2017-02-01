@@ -164,8 +164,7 @@ void setup_uart()
 
 	lpuart->cr1 = cr1;
 
-	lpuart->brr.brr = 0x36a; // "LPUARTDIV"
-	//lpuart->brr.brr = 0xfa0ab; // "LPUARTDIV"
+	lpuart->brr.brr = (256*32768/(9600/10) + 5)/10; // "LPUARTDIV"
 
 	struct lpuart_cr2 cr2 = {
 		.addm7 = 0, // 8-bit address detection/4-bit address detection

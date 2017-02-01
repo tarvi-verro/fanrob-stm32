@@ -5,7 +5,7 @@
 
 #include <limits.h>
 #include "tim.h"
-#include "rcc.h"
+#include "rcc-abs.h"
 #include "gpio.h"
 #include "uart.h"
 #include "exti-abs.h"
@@ -61,18 +61,16 @@ void setup_fanctl()
 	volatile struct tim_reg *tim = cfg_fan.ctl_tim;
 	setup_fanctl_pins();
 	// Setup PWM
-#ifdef CONF_L0
-	if (tim == tim2)
+	if (tim == tim2) {
 		rcc->apb1enr.tim2en = 1;
-	else
+		assert(rcc->cfgr.ppre1 == PPRE_NONE);
+	} else {
 		assert(0);
-
-	/* Assuming startup default 2 MHz clock. */
-#else
-#warning is startup default clock 2 MHz?
-#endif
-	tim->arr = 72; /* auto-reload aka period */
-	tim->psc = 1; /* prescaler: (2 MHz / 25 kHz) */
+	}
+	unsigned period = (rcc_get_sysclk()/2500 + 5) / 10;
+	assert(period > 20 && period < 64000);
+	tim->arr = period; /* auto-reload aka period */
+	tim->psc = 0; /* prescaler, set to zero, take all the accuracy */
 	tim->egr.ug = 1;
 
 	tim->cr1.dir = TIM_DIR_UPCNT; /* upcounter */
@@ -99,17 +97,6 @@ void setup_fanctl()
 	}
 	*get_ctltim_ccr() = 40;
 	tim->cr1.cen = 1; /* enable */
-
-	// Setup RPM counter
-#ifdef CONF_L0
-	rcc->apb2enr.syscfgen = 1;
-	syscfg->exticr4.exti12 = SYSCFG_EXTI_PA;
-	exti->imr.im12 = 1;
-	exti->ftsr.ft12 = 1;
-	//exti->emr.em12 = 1;
-	//exti->swier.swi12 = 1;
-	nvic_iser[0] |= 1 << 7;
-#endif
 }
 
 int rpm_target_delta = -1;
@@ -160,8 +147,11 @@ static void ic_fanctl(enum pin p)
 
 void fanctl_setspeed(uint8_t speed)
 {
-	// [0,255] → [0,80]
-	*get_ctltim_ccr() = speed * 1000 / 3556;
+	volatile struct tim_reg *tim = cfg_fan.ctl_tim;
+	// [0,255] → [0,period-1]
+	unsigned period = tim->arr;
+	unsigned div = (255 * 10000 / (period-1) + 5) / 10;
+	*get_ctltim_ccr() = speed * 1000 / div;
 	rpm_target_delta = -1;
 }
 

@@ -2,18 +2,58 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum {
-	RCC_PPRE_NONE,
-	RCC_PPRE_2 = 4,
-	RCC_PPRE_4,
-	RCC_PPRE_8,
-	RCC_PPRE_16,
+enum rcc_msirange {
+	MSIRANGE0_65_kHz,
+	MSIRANGE1_131_kHz,
+	MSIRANGE2_262_kHz,
+	MSIRANGE3_524_kHz,
+	MSIRANGE4_1_MHz,
+	MSIRANGE5_2_MHz,
+	MSIRANGE6_4_MHz,
 };
-_Static_assert (RCC_PPRE_16 == 7, "RCC_PPRE broken.");
+_Static_assert (MSIRANGE6_4_MHz == 6, "rcc_msirange broken.");
+
+struct rcc_icscr {
+	uint32_t hsi16_cal : 8, hsi16_trim : 5;
+	enum rcc_msirange msirange : 3;
+	uint32_t msical : 8, msitrim : 8;
+};
+
+enum rcc_ppre {
+	PPRE_NONE,
+	PPRE_HCLK_DIV_2 = 4,
+	PPRE_HCLK_DIV_4,
+	PPRE_HCLK_DIV_8,
+	PPRE_HCLK_DIV_16,
+};
+_Static_assert (PPRE_HCLK_DIV_16 == 7, "RCC_PPRE broken.");
+
+enum rcc_hpre {
+	HPRE_NONE,
+	HPRE_SYSCLK_DIV_2 = 8,
+	HPRE_SYSCLK_DIV_4,
+	HPRE_SYSCLK_DIV_8,
+	HPRE_SYSCLK_DIV_16,
+	HPRE_SYSCLK_DIV_64,
+	HPRE_SYSCLK_DIV_128,
+	HPRE_SYSCLK_DIV_256,
+	HPRE_SYSCLK_DIV_512,
+};
+_Static_assert (HPRE_SYSCLK_DIV_512 == 15, "enum rcc_hpre broken.");
+
+enum rcc_sw {
+	SW_MSI_OSC,
+	SW_HSI16_OSC,
+	SW_HSE,
+	SW_PLL,
+};
 
 struct rcc_cfgr {
-	uint32_t sw : 2, sws : 2, hpre : 4, ppre1 : 3, ppre2 : 3, : 1,
-		 stopwuck : 1, pllsrc : 1, : 1, pllmul : 4, plldiv : 2,
+	enum rcc_sw sw : 2;
+	uint32_t sws : 2;
+	enum rcc_hpre hpre : 4;
+	enum rcc_ppre ppre1 : 3, ppre2 : 3;
+	uint32_t : 1, stopwuck : 1, pllsrc : 1, : 1, pllmul : 4, plldiv : 2,
 		 mcosel : 4, mcopre : 3, : 1;
 };
 
@@ -70,7 +110,7 @@ struct rcc_ccipr {
 
 struct rcc_reg {
 	uint32_t cr;			// 0x00
-	uint32_t icscr;			// 0x04
+	struct rcc_icscr icscr;		// 0x04
 	uint32_t _padding00[1];		// 0x08
 	struct rcc_cfgr cfgr;		// 0x0C
 	uint32_t cier;			// 0x10
