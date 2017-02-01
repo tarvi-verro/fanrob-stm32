@@ -19,6 +19,9 @@ void setup_uart() {}
 #ifndef ic_dma_receiver
 #error Configuration had to define ic_dma_receiver!
 #endif
+#ifndef dma_ch
+#error Configuration had to define dma_ch!
+#endif
 
 #include "lpuart.h"
 #include "exti.h"
@@ -27,6 +30,8 @@ void setup_uart() {}
 #include "dma.h"
 #include <stdbool.h>
 
+#define _MAC2STR(X) #X
+#define MAC2STR(X) _MAC2STR(X)
 
 static void setup_uart_pins()
 {
@@ -85,38 +90,42 @@ void uart_puts(const char *s)
 
 void uart_putc(char c)
 {
-	//while(!lpuart1->isr.idle);
-	//while (!lpuart1->isr.fe);
-	//while (!lpuart1->isr.pe);
-	//while (!lpuart1->isr.nf);
+	volatile struct lpuart_reg *lpuart = cfg_uart.lpuart;
+	//while(!lpuart->isr.idle);
+	//while (!lpuart->isr.fe);
+	//while (!lpuart->isr.pe);
+	//while (!lpuart->isr.nf);
 
-//	lpuart1->cr1.te = 1;
-	lpuart1->cr1.te = 1;
-	//while (!lpuart1->isr.teack);
-	while (!lpuart1->isr.txe);
-	lpuart1->tdr.tdr = c;
-	while (!lpuart1->isr.txe);
-	lpuart1->cr1.te = 0;
-	while (!lpuart1->isr.tc);
+//	lpuart->cr1.te = 1;
+	lpuart->cr1.te = 1;
+	//while (!lpuart->isr.teack);
+	while (!lpuart->isr.txe);
+	lpuart->tdr.tdr = c;
+	while (!lpuart->isr.txe);
+	lpuart->cr1.te = 0;
+	while (!lpuart->isr.tc);
 }
 
 extern void clock_init_lse(); // clock.c
 
 
-void interr_dma2_ch7();
-
 char uart_readbuf[14] = { 0 };
 
 void setup_uart()
 {
+	volatile struct lpuart_reg *lpuart = cfg_uart.lpuart;
+	volatile struct dma_reg *dma = cfg_uart.dma;
 	for (int i = 0; i < sizeof(uart_readbuf); i++)
 		uart_readbuf[i] = 0;
 
+	if (lpuart == lpuart1)
 #ifdef CONF_L4
-	rcc->apb1enr2.lpuart1en = 1;
+		rcc->apb1enr2.lpuart1en = 1;
 #elif defined(CONF_L0)
-	rcc->apb1enr.lpuart1en = 1;
+		rcc->apb1enr.lpuart1en = 1;
 #endif
+	else
+		assert(0);
 	setup_uart_pins();
 
 	int i;
@@ -125,7 +134,10 @@ void setup_uart()
 
 
 	clock_init_lse();
-	rcc->ccipr.lpuart1sel = RCC_CLKSRC_LSE;
+	if (lpuart == lpuart1)
+		rcc->ccipr.lpuart1sel = RCC_CLKSRC_LSE;
+	else
+		assert(0);
 
 	struct lpuart_cr1 cr1 = {
 		.ue = 0, // LPUART enable
@@ -150,10 +162,10 @@ void setup_uart()
 	};
 
 
-	lpuart1->cr1 = cr1;
+	lpuart->cr1 = cr1;
 
-	lpuart1->brr.brr = 0x36a; // "LPUARTDIV"
-	//lpuart1->brr.brr = 0xfa0ab; // "LPUARTDIV"
+	lpuart->brr.brr = 0x36a; // "LPUARTDIV"
+	//lpuart->brr.brr = 0xfa0ab; // "LPUARTDIV"
 
 	struct lpuart_cr2 cr2 = {
 		.addm7 = 0, // 8-bit address detection/4-bit address detection
@@ -166,7 +178,7 @@ void setup_uart()
 		.add_0 = 0, // address of the lpuart node
 		.add_1 = 0, // also address of the lpuart node
 	};
-	lpuart1->cr2 = cr2;
+	lpuart->cr2 = cr2;
 
 	struct lpuart_cr3 cr3 = {
 		.eie = 0, // error interrupt enable
@@ -183,18 +195,18 @@ void setup_uart()
 		.wus = 0, // wakeup from stop mode interrupt flag selection
 		.wufie = 0, // wakeup from stop mode interrupt enable
 	};
-	lpuart1->cr3 = cr3;
-	//lpuart1->cr3.ovrdis = 1;
+	lpuart->cr3 = cr3;
+	//lpuart->cr3.ovrdis = 1;
 
-	lpuart1->cr1.ue = 1;
-//	lpuart1->cr1.te = 0;
-	while (!lpuart1->cr1.ue);
+	lpuart->cr1.ue = 1;
+//	lpuart->cr1.te = 0;
+	while (!lpuart->cr1.ue);
 
 #ifdef CONF_L4
 	// Set up break on '\n' to parse full lines
-	lpuart1->cr2.add_0 = '\r' & 0x0f;
-	lpuart1->cr2.add_1 = ('\r' & 0xf0) >> 4;
-	lpuart1->cr1.cmie = 1; // enable character match interrupt
+	lpuart->cr2.add_0 = '\r' & 0x0f;
+	lpuart->cr2.add_1 = ('\r' & 0xf0) >> 4;
+	lpuart->cr1.cmie = 1; // enable character match interrupt
 	nvic_iser[2] |= 1 << 6;
 #elif defined(CONF_L0)
 	/*
@@ -213,28 +225,19 @@ void setup_uart()
 
 	// Set up DMA
 #ifdef CONF_L4
-	/*
-	 * For L4 DMA2: (hw registers page 302)
-	 *	   Request number | Channel 6	| Channel 7
-	 *			4 | LPUART_TX	| LPUART_RX
-	 */
-	rcc->ahb1enr.dma2en = 1;
-
-	dma2->ch7.cpar = &lpuart1->rdr; // Peripheral address
-	dma2->ch7.cmar = uart_readbuf; // Memory address to push data to
-	dma2->ch7.cndtr.ndt = sizeof(uart_readbuf) - 1; // Total number of data to be transferred
+	if (dma == dma2)
+		rcc->ahb1enr.dma2en = 1;
+	else
+		assert(0);
 #elif defined(CONF_L0)
-	/*
-	 * For L0 DMA1 (hw registers page 245, 253-254)
-	 *	   Request number | Channel 2	| Channel 3
-	 *	   		5 | LPUART1_TX	| LPUART1_RX
-	 */
-	rcc->ahbenr.dma1en = 1;
-
-	dma1->ch3.cpar = &lpuart1->rdr; // Peripheral address
-	dma1->ch3.cmar = uart_readbuf; // Memory address to push data to
-	dma1->ch3.cndtr.ndt = sizeof(uart_readbuf) - 1; // Total number of data to be transferred
+	if (dma == dma1)
+		rcc->ahbenr.dma1en = 1;
+	else assert(0);
 #endif
+
+	dma->dma_ch.cpar = (void *) &lpuart->rdr; // Peripheral address
+	dma->dma_ch.cmar = uart_readbuf; // Memory address to push data to
+	dma->dma_ch.cndtr.ndt = sizeof(uart_readbuf) - 1; // Total number of data to be transferred
 
 	for (int z = 0; z < 0x8000; z++) asm("nop");
 
@@ -248,57 +251,51 @@ void setup_uart()
 		.pinc = 0, // Peripheral increment mode
 		.tcie = 1, // Transfer complete interrupt
 	};
+	dma->dma_ch.ccr = ccr;
 #ifdef CONF_L4
-	dma2->ch7.ccr = ccr;
-	nvic_iser[2] |= 1 << 5;
-
-	dma2->cselr.ch7.cs = 4; // Select 0100:LPUART_RX
-
-	dma2->ch7.ccr.en = 1;
+	if (dma == dma2 && (MAC2STR(dma_ch)[2] == '7'))
+		nvic_iser[2] |= 1 << 5;
+	else
+		assert(0);
 #elif defined(CONF_L0)
-	dma1->ch3.ccr = ccr;
-	nvic_iser[0] |= 1 << 10;
-
-	dma1->cselr.ch3.cs = 5; // Select 0101:LPUART1_RX
-
-	dma1->ch3.ccr.en = 1;
+	if (dma == dma1 && (MAC2STR(dma_ch))[2] == '3')
+		nvic_iser[0] |= 1 << 10;
+	else
+		assert(0);
 #endif
-	lpuart1->cr1.re = 1;
-	while (!lpuart1->isr.reack);
-	uart_puts("jes\r\n");
+	dma->cselr.dma_ch.cs = cfg_uart.dma_sel_lpuart_rx;
+
+	dma->dma_ch.ccr.en = 1;
+
+	lpuart->cr1.re = 1;
+	while (!lpuart->isr.reack);
 }
 
 extern void cmd_rotate(); // cmd.c
 
 void ic_dma_receiver()
 {
-//	io_green->odr.pin_green ^= 1;
-#ifdef CONF_L4
-	dma2->ifcr.ch7.ctcif = 1;
-#elif defined(CONF_L0)
-	dma1->ifcr.ch3.ctcif = 1;
-#endif
+	volatile struct dma_reg *dma = cfg_uart.dma;
+	dma->ifcr.dma_ch.ctcif = 1;
 	cmd_rotate();
 }
 
 int uart_readbuf_length()
 {
-#ifdef CONF_L4
-			return sizeof(uart_readbuf) - dma2->ch7.cndtr.ndt;
-#elif defined(CONF_L0)
-			return sizeof(uart_readbuf) - dma1->ch3.cndtr.ndt;
-#endif
+	volatile struct dma_reg *dma = cfg_uart.dma;
+	return sizeof(uart_readbuf) - dma->dma_ch.cndtr.ndt;
 }
 
+#ifdef CONF_L4
 void i_lpuart1()
 {
-#ifdef CONF_L4
-	// lpuart1->isr.cmf		// character match flag
-	// lpuart1->icr.cmcf = 1	// reset character match flag
-	assert(lpuart1->isr.cmf); // character match flag
-	lpuart1->icr.cmcf = 1; // reset character match flag
+	volatile struct lpuart_reg *lpuart = cfg_uart.lpuart;
+	// lpuart->isr.cmf		// character match flag
+	// lpuart->icr.cmcf = 1	// reset character match flag
+	assert(lpuart->isr.cmf); // character match flag
+	lpuart->icr.cmcf = 1; // reset character match flag
 	gpio_flip(cfg_assert.led);
-#endif
 }
+#endif
 
 #endif

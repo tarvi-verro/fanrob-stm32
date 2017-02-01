@@ -33,6 +33,16 @@ static uint32_t *const nvic_iser = (uint32_t *) 0xe000e100; // ✓
 //static uint32_t *const nvic_stir = (uint32_t *) 0xe000ef00; // ?
 static volatile struct spi_reg *const spi1_reg = (struct spi_reg *) 0x40013000;
 static struct lpuart_reg *const lpuart1 = (struct lpuart_reg *) 0x40004800; // ✓
+static volatile struct usart_reg *const usart1 = (struct usart_reg *) 0x40013800; // ✓
+static volatile struct usart_reg *const usart2 = (struct usart_reg *) 0x40004400; // ✓
+static volatile struct usart_reg *const usart4 = (struct usart_reg *) 0x40004C00; // ✓
+static volatile struct usart_reg *const usart5 = (struct usart_reg *) 0x40005000; // ✓
 
 #define tim2_macro (struct tim_reg *) 0x40000000
+#define usart1_macro (struct usart_reg *) 0x40013800
+#define usart2_macro (struct usart_reg *) 0x40004400
+#define usart4_macro (struct usart_reg *) 0x40004C00
+#define usart5_macro (struct usart_reg *) 0x40005000
+#define lpuart1_macro (struct lpuart_reg *) 0x40004800
+#define dma1_macro (struct dma_reg *) 0x40020000
 

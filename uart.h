@@ -14,6 +14,9 @@ struct uart_configuration {
 	enum pin tx;
 	enum pin rx;
 	int alt;
+	volatile struct lpuart_reg *lpuart;
+	volatile struct dma_reg *dma;
+	int dma_sel_lpuart_rx; // See dma->cselr.chX.cs
 };
 static const struct uart_configuration cfg_uart;
 #endif

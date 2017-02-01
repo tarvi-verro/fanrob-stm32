@@ -109,7 +109,7 @@ vecs:
 	.word undef_interr	// 0xA4, SPI1 global int.
 	.word undef_interr	// 0xA8, SPI2 global int.
 	.word undef_interr	// 0xAC, USART1 global int. through EXTI 25
-	.word undef_interr	// 0xB0, USART2 global int. through EXTI 26
+	.word i_usart2		// 0xB0, USART2 global int. through EXTI 26
 	.word i_lpuart1		// 0xB4, LPUART1 global int. through EXTI 28 + AES global int.	1 << 29
 .size vecs, .-vecs
 
@@ -127,6 +127,9 @@ vecs:
 
 	.weak i_exti_4_15
 	.thumb_set i_exti_4_15,Default_Handler
+
+	.weak i_usart2
+	.thumb_set i_usart2,Default_Handler
 
 	.weak i_lpuart1
 	.thumb_set i_lpuart1,Default_Handler

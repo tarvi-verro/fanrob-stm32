@@ -2,13 +2,22 @@
 
 
 #ifdef CFG_UART
+/*
+ * For L4 DMA2: (hw registers page 302)
+ *	   Request number | Channel 6	| Channel 7
+ *			4 | LPUART_TX	| LPUART_RX
+ */
 static const struct uart_configuration cfg_uart = {
 	.tx = PA2, /* A7 → lpuart1 tx */
 	.rx = PA3, /* A2 → lpuart1 rx */
 	.alt = 8,
+	.lpuart = lpuart1_macro,
+	.dma = dma2_macro,
+	.dma_sel_lpuart_rx = 4, // Select 0100:LPUART_RX
 };
 /* Configure uart.c */
 #define ic_dma_receiver i_dma2_ch7
+#define dma_ch ch7
 #endif
 
 
