@@ -1,37 +1,33 @@
+#include "gpio-abs.h"
+#define CFG_HEAT
+#include "tim-preset.h"
+#include "heater.h"
 #include "conf.h"
-
-#ifndef CONF_F0
-#warning heater not supported on target
-void setup_heater() {}
-void heater_set(uint8_t b) {}
-#else
 
 #include "gpio.h"
 #include "tim.h"
 #include "rcc.h"
-#include "heater.h"
 
 extern void setup_tim14();
 
 void setup_heater()
 {
-	/* FW232 mosfet */
-	rcc->ahbenr.iop_heat_en = 1;
-	io_heat->moder.pin_heat = GPIO_MODER_AF;
-	io_heat->ospeedr.pin_heat = GPIO_OSPEEDR_HIGH;
-	io_heat->otyper.pin_heat = GPIO_OTYPER_PP;
-	io_heat->pupdr.pin_heat = GPIO_PUPDR_NONE;
-	io_heat->afr.pin_heat = 0; /* tim14 ch1, AF0 */
+	/* TODO: Test the FQU13N06LTU MOSFET */
+	struct gpio_conf gcfg = {
+		.mode = GPIO_MODER_AF,
+		.ospeed = GPIO_OSPEEDR_LOW,
+		.otype = GPIO_OTYPER_PP,
+		.pupd = GPIO_PUPDR_NONE,
+		.alt = cfg_heat.gpio_af_tim,
+	};
+	gpio_configure(cfg_heat.mosfet, &gcfg);
 
-	setup_tim14();
-
-	tim14->ccer.cc1e = 1;
-	tim14->ccr1 = 0;
+	setup_tim_slow();
+	tim_slow_duty_set(cfg_heat.mosfet_tim_slow_ch, 0);
 }
 
 void heater_set(uint8_t b)
 {
-	tim14->ccr1 = (b) * 10;
+	tim_slow_duty_set(cfg_heat.mosfet_tim_slow_ch, b);
 }
 
-#endif

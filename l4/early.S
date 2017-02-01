@@ -85,42 +85,42 @@ vecs:
 	.word undef_interr	// 0x38, PendSV
 	.word undef_interr	// 0x3C, systick
 
-	.word undef_interr	// 0x40,  0, WWDG
+	.word undef_interr	// 0x40,  0, WWDG			[0] |= 1 << 0
 	.word undef_interr	// 0x44,  1, PVD_PVM
 	.word undef_interr	// 0x48,  2, RTC_TAMP_STAMP/CSS_LSE	1 << 2
 	.word i_rtc_wut		// 0x4C,  3, RTC_WKUP through exti 20	1 << 3
 
-	.word undef_interr	// 0x50,  4, FLASH
-	.word undef_interr	// 0x54,  5, RCC 			1 << 5
-	.word undef_interr	// 0x58,  6, EXTI0
-	.word undef_interr	// 0x5C,  7, EXTI1			1 << 7
+	.word undef_interr	// 0x50,  4, FLASH			[0] |= 1 << 4
+	.word undef_interr	// 0x54,  5, RCC 			[0] |= 1 << 5
+	.word i_exti_0		// 0x58,  6, EXTI0			[0] |= 1 << 6
+	.word i_exti_1		// 0x5C,  7, EXTI1			[0] |= 1 << 7
 
-	.word undef_interr	// 0x60,  8, EXTI2
-	.word undef_interr	// 0x64,  9, EXTI3
-	.word undef_interr	// 0x68, 10, EXTI4
+	.word i_exti_2		// 0x60,  8, EXTI2			[0] |= 1 << 8
+	.word i_exti_3		// 0x64,  9, EXTI3
+	.word i_exti_4		// 0x68, 10, EXTI4
 	.word undef_interr	// 0x6C, 11, DMA1_CH1
 
-	.word undef_interr	// 0x70, 12, DMA1_CH2
+	.word undef_interr	// 0x70, 12, DMA1_CH2			[0] |= 1 << 12
 	.word undef_interr	// 0x74, 13, DMA1_CH3
 	.word undef_interr	// 0x78, 14, DMA1_CH4
 	.word undef_interr	// 0x7C, 15, DMA1_CH5
 
-	.word undef_interr	// 0x80, 16, DMA1_CH6
+	.word undef_interr	// 0x80, 16, DMA1_CH6			[0] |= 1 << 16
 	.word undef_interr	// 0x84, 17, DMA1_CH7
 	.word undef_interr	// 0x88, 18, ADC1
 	.word undef_interr	// 0x8C, 19, CAN1_TX
 
-	.word undef_interr	// 0x90, 20, CAN1_RX0
+	.word undef_interr	// 0x90, 20, CAN1_RX0			[0] |= 1 << 20
 	.word undef_interr	// 0x94, 21, CAN1_RX1
 	.word undef_interr	// 0x98, 22, CAN1_SCE
-	.word undef_interr	// 0x9C, 23, EXTI9_5
+	.word i_exti_5_9	// 0x9C, 23, EXTI9_5
 
-	.word undef_interr	// 0xA0, 24, TIM1_BRK/TIM15
+	.word undef_interr	// 0xA0, 24, TIM1_BRK/TIM15		[0] |= 1 << 24
 	.word undef_interr	// 0xA4, 25, TIM1_UP/TIM16
 	.word undef_interr	// 0xA8, 26, TIM1_TRG_COM
 	.word undef_interr	// 0xAC, 27, TIM1_CC
 
-	.word undef_interr	// 0xB0, 28, TIM2
+	.word undef_interr	// 0xB0, 28, TIM2			[0] |= 1 << 28
 	.word 0			// 0xB4, 29, reserved
 	.word 0			// 0xB8, 30, reserved
 	.word undef_interr	// 0xBC, 31, I2C1_EV			[0] |= 1 << 31
@@ -135,7 +135,7 @@ vecs:
 	.word undef_interr	// 0xD8, 38, USART2
 	.word undef_interr	// 0xDC, 39, USART3
 
-	.word undef_interr	// 0xE0, 40, EXTI15_10			[1] |= 1 <<  8
+	.word i_exti_10_15	// 0xE0, 40, EXTI15_10			[1] |= 1 <<  8
 	.word i_rtc_alr		// 0xE4, 41, RTC_ALARM through exti 18	[1] |= 1 <<  9
 	.word 0			// 0xE8, 42, reserved
 	.word 0			// 0xEC, 43, reserved
@@ -204,4 +204,26 @@ vecs:
 
 	.weak i_rtc_alr
 	.thumb_set i_rtc_alr,Default_Handler
+
+	.weak i_exti_10_15
+	.thumb_set i_exti_10_15,Default_Handler
+
+	.weak i_exti_5_9
+	.thumb_set i_exti_5_9,Default_Handler
+
+	.weak i_exti_4
+	.thumb_set i_exti_4,Default_Handler
+
+	.weak i_exti_3
+	.thumb_set i_exti_3,Default_Handler
+
+	.weak i_exti_2
+	.thumb_set i_exti_2,Default_Handler
+
+	.weak i_exti_1
+	.thumb_set i_exti_1,Default_Handler
+
+	.weak i_exti_0
+	.thumb_set i_exti_0,Default_Handler
+
 

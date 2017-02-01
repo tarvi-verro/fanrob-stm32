@@ -1,3 +1,4 @@
+#pragma once
 #include <stdint.h>
 
 struct gpio_reg;
@@ -26,11 +27,15 @@ static volatile struct gpio_reg *const gpio_reg_c = (struct gpio_reg *) 0x480008
 static volatile struct tim_reg *const tim1 = (struct tim_reg *) 0x40012C00;
 static volatile struct tim_reg *const tim14 = (struct tim_reg *) 0x40002000;
 static volatile struct exti_reg *const exti = (struct exti_reg *) 0x40010400;
-static uint32_t *const exti_int = (uint32_t *) 0x40010400;
+//static uint32_t *const exti_int = (uint32_t *) 0x40010400;
 static uint32_t *const syscfg_int = (uint32_t *) 0x40010000;
 static struct syscfg_reg *const syscfg = (struct syscfg_reg *) 0x40010000;
 static uint32_t *const nvic_iser = (uint32_t *) 0xe000e100;
 static uint32_t *const nvic_ispr = (uint32_t *) 0xe000e200;
 static uint32_t *const nvic_icpr = (uint32_t *) 0xe000e280;
-static volatile struct spi_reg *const spi1_reg = (struct spi_reg *) 0x40013000;
-
+static volatile struct spi_reg *const spi1 = (struct spi_reg *) 0x40013000;
+#define spi1_macro ((volatile struct spi_reg *) 0x40013000)
+#define dma_macro ((volatile struct dma_reg *) 0x40020000)
+#define tim3_macro ((volatile struct tim_reg *) 0x40000400)
+#define tim14_macro (struct tim_reg *) 0x40002000
+#define tim1_macro (struct tim_reg *) 0x40012C00

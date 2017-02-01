@@ -86,8 +86,8 @@ vecs:
 	.word i_rtc_global	// 0x48, RTC global (EXTI 17/19/20 lines) and LSE CSS through EXTI 19		1 << 2
 	.word undef_interr	// 0x4C, flash memory and data EEPROM global int.
 	.word undef_interr	// 0x50, RCC global
-	.word undef_interr	// 0x54, EXTI_0_1		1 << 5
-	.word undef_interr	// 0x58, EXTI_2_3
+	.word i_exti_0_1	// 0x54, EXTI_0_1		1 << 5
+	.word i_exti_2_3	// 0x58, EXTI_2_3
 	.word i_exti_4_15	// 0x5C, EXTI_4_15		1 << 7
 	.word 0			// 0x60, reserved
 	.word undef_interr	// 0x64, DMA1_CH1
@@ -118,6 +118,12 @@ vecs:
 
 	.weak i_rtc_global
 	.thumb_set i_rtc_global,Default_Handler
+
+	.weak i_exti_0_1
+	.thumb_set i_exti_0_1,Default_Handler
+
+	.weak i_exti_2_3
+	.thumb_set i_exti_2_3,Default_Handler
 
 	.weak i_exti_4_15
 	.thumb_set i_exti_4_15,Default_Handler

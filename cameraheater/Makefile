@@ -22,23 +22,27 @@ PRINT_PRETTY:=1
 endif
 
 f0: $O/prg-f0
-l4: $O/prg-l0
+l4: $O/prg-l4
 
 chkpath:
 	@[ -d $(PATH_LIBGCC) ]
 	@[ -d $(PATH_LIBNEW) ]
 
-SRC:=../font-tiny.xcf main.c ../early_reset.c ../lcd-com.c ../font-lookup.c ../clock.c ../app-info.c \
-	../app.c ../app-menu.c app-exposure.c ../kbd.c camsig.c app-heater.c heater.c \
-	../decimal.c tim1-en.c ../app-voltm.c ../adc.c ../rcc.c ../uart.c
+SRC:=../font-tiny.xcf main.c ../early_reset.c ../lcd-com.c ../font-lookup.c \
+	../clock.c ../app-info.c ../app.c ../app-menu.c app-exposure.c \
+	../kbd.c camsig.c app-heater.c heater.c ../decimal.c ../app-voltm.c \
+	../adc.c ../rcc.c ../uart.c ../assert.c ../tim-preset.c ../exti-abs.c \
+	../cmd.c
 
 OBJ:= \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \
 	$(patsubst %.S, $O/%.o, $(filter %.S, $(SRC))) \
 	$(patsubst %.xcf, $O/%.o, $(filter %.xcf, $(SRC)))
 
+# OTGT returns 'l4', 'f0', 'l0' from target name $@
+#OTGT=$(lastword $(patsubst -, ,$(@:.o=)))
 
-CFLAGS:=$(CFLAGS) -g3 -O0  -Wall -I.. -I.
+CFLAGS= -g3 -O0  -Wall -I.. -I.
 
 ASFLAGS:= -g3 -mthumb -mcpu=cortex-m0 -EL
 

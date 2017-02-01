@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum {
+enum gpio_mode {
 	GPIO_MODER_IN,
 	GPIO_MODER_OUT,
 	GPIO_MODER_AF,
@@ -16,7 +16,7 @@ struct gpio_moder {
 		 pin14 : 2, pin15 : 2;
 };
 
-enum {
+enum gpio_otype {
 	GPIO_OTYPER_PP,
 	GPIO_OTYPER_OD,
 };
@@ -27,7 +27,7 @@ struct gpio_otyper {
 	uint32_t : 16; /* reserved */
 };
 
-enum {
+enum gpio_ospeed {
 	GPIO_OSPEEDR_LOW,
 	GPIO_OSPEEDR_MEDIUM,
 	GPIO_OSPEEDR_RESERVED,
@@ -40,7 +40,7 @@ struct gpio_ospeedr {
 		 pin12 : 2, pin13 : 2, pin14 : 2, pin15 : 2;
 };
 
-enum {
+enum gpio_pupd {
 	GPIO_PUPDR_NONE,
 	GPIO_PUPDR_PULLUP,
 	GPIO_PUPDR_PULLDOWN,

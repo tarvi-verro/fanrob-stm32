@@ -1,3 +1,4 @@
+#pragma once
 #include <stdint.h>
 
 struct gpio_reg;
@@ -32,4 +33,6 @@ static uint32_t *const nvic_iser = (uint32_t *) 0xe000e100; // ✓
 //static uint32_t *const nvic_stir = (uint32_t *) 0xe000ef00; // ?
 static volatile struct spi_reg *const spi1_reg = (struct spi_reg *) 0x40013000;
 static struct lpuart_reg *const lpuart1 = (struct lpuart_reg *) 0x40004800; // ✓
+
+#define tim2_macro (struct tim_reg *) 0x40000000
 

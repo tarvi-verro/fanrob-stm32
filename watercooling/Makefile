@@ -30,7 +30,8 @@ chkpath:
 	@[ -d $(PATH_LIBNEW) ]
 
 SRC:=main.c ../l0/early.S ../early_reset.c ../clock.c ../decimal.c \
-	../adc.c ../rcc.c ../uart.c fanctl.c ../cmd.c cmd_handler.c ../font-tiny.xcf
+	../assert.c ../adc.c ../rcc.c ../uart.c fanctl.c ../cmd.c \
+	cmd_handler.c ../font-tiny.xcf ../exti-abs.c
 
 OBJ:= \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \

@@ -1,57 +1,104 @@
+#define CFG_FANCTL
+#include "gpio-abs.h"
+#include "fanctl.h"
 #include "conf.h"
+
 #include <limits.h>
 #include "tim.h"
 #include "rcc.h"
 #include "gpio.h"
 #include "uart.h"
-#include "exti.h"
+#include "exti-abs.h"
 #include "syscfg.h"
-#include <stdbool.h>
-void assert(bool);
+#include "assert-c.h"
 
 #ifndef CONF_L0
 #error "fanctl needs configuring for given target!"
 #endif
 
+static void ic_fanctl(enum pin p);
+__attribute__((section(".rodata.exti.gpio.callb"))) void (*const fanctl_exti_cb)(enum pin) = ic_fanctl;
+
 static void setup_fanctl_pins()
 {
 	// PWM timer
-	rcc->iop_fanctl_rcc.iop_fanctl_en = 1;
-	io_fanctl->moder.pin_fan1_ctl = GPIO_MODER_AF;
-#ifdef CONF_L0
-	io_fanctl->afr.pin_fan1_ctl = 5; /* AF5 → TIM2_CH3 */
-#endif
-
-	io_fanctl->otyper.pin_fan1_ctl = GPIO_OTYPER_PP;
-	io_fanctl->pupdr.pin_fan1_ctl = GPIO_PUPDR_NONE;
+	struct gpio_conf ctlc = {
+		.otype = GPIO_OTYPER_PP,
+		.pupd = GPIO_PUPDR_NONE,
+		.mode = GPIO_MODER_AF,
+		.alt = cfg_fan.ctl_tim_af,
+	};
+	gpio_configure(cfg_fan.ctl, &ctlc);
 
 	// RPM counter
-	rcc->iop_rpm_rcc.iop_rpm_en = 1;
-	io_rpm->moder.pin_rpm = GPIO_MODER_IN;
-	io_rpm->pupdr.pin_rpm = GPIO_PUPDR_NONE;
+	struct gpio_conf rpm_gpio = {
+		.mode = GPIO_MODER_IN,
+		.pupd = GPIO_PUPDR_NONE,
+	};
+	gpio_configure(cfg_fan.rpm, &rpm_gpio);
+	struct exti_conf rpm_exti = {
+		.im = 1,
+		.ft = 1,
+	};
+	exti_configure_pin(cfg_fan.rpm, &rpm_exti, &fanctl_exti_cb);
+}
+
+static volatile uint32_t *get_ctltim_ccr()
+{
+	volatile struct tim_reg *tim = cfg_fan.ctl_tim;
+	switch (cfg_fan.ctl_tim_ch) {
+		case TIM_CH1: return &tim->ccr1;
+		case TIM_CH2: return &tim->ccr2;
+		case TIM_CH3: return &tim->ccr3;
+		case TIM_CH4: return &tim->ccr4;
+		default: assert(0);
+	}
+	return NULL;
 }
 
 void setup_fanctl()
 {
+	volatile struct tim_reg *tim = cfg_fan.ctl_tim;
 	setup_fanctl_pins();
 	// Setup PWM
 #ifdef CONF_L0
-	rcc->apb1enr.tim2en = 1;
-#endif
+	if (tim == tim2)
+		rcc->apb1enr.tim2en = 1;
+	else
+		assert(0);
+
 	/* Assuming startup default 2 MHz clock. */
-	tim2->arr = 72; /* auto-reload aka period */
-	tim2->psc = 1; /* prescaler: (2 MHz / 25 kHz) */
-	tim2->egr.ug = 1;
+#else
+#warning is startup default clock 2 MHz?
+#endif
+	tim->arr = 72; /* auto-reload aka period */
+	tim->psc = 1; /* prescaler: (2 MHz / 25 kHz) */
+	tim->egr.ug = 1;
 
-	tim2->cr1.dir = TIM_DIR_UPCNT; /* upcounter */
+	tim->cr1.dir = TIM_DIR_UPCNT; /* upcounter */
 
-	tim2->ccmr.ch3.out.ccs = TIM_CCS_OUT;
-	tim2->ccmr.ch3.out.ocm = 6;
-	tim2->ccmr.ch3.out.ocpe = 1;
+	volatile union tim_ccmr_ch *ch;
 
-	tim2->ccer.cc3e = 1;
-	tim2->ccr3 = 40;
-	tim2->cr1.cen = 1; /* enable */
+	switch (cfg_fan.ctl_tim_ch) {
+	case TIM_CH1: ch = &tim->ccmr.ch1; break;
+	case TIM_CH2: ch = &tim->ccmr.ch2; break;
+	case TIM_CH3: ch = &tim->ccmr.ch3; break;
+	case TIM_CH4: ch = &tim->ccmr.ch4; break;
+	default: assert(0);
+	}
+	ch->out.ccs = TIM_CCS_OUT;
+	ch->out.ocm = 6;
+	ch->out.ocpe = 1;
+
+	switch (cfg_fan.ctl_tim_ch) {
+	case TIM_CH1: tim->ccer.cc1e = 1; break;
+	case TIM_CH2: tim->ccer.cc2e = 1; break;
+	case TIM_CH3: tim->ccer.cc3e = 1; break;
+	case TIM_CH4: tim->ccer.cc4e = 1; break;
+	default: assert(0);
+	}
+	*get_ctltim_ccr() = 40;
+	tim->cr1.cen = 1; /* enable */
 
 	// Setup RPM counter
 #ifdef CONF_L0
@@ -87,7 +134,8 @@ void rpm_chkspeed()
 	else if (offset < -l)
 		offset = -l;
 
-	tim2->ccr3 += offset;
+	volatile uint32_t *ccr = get_ctltim_ccr();
+	*ccr += offset;
 }
 
 void rpm_collect_1hz()
@@ -104,16 +152,16 @@ void rpm_collect_1hz()
 	rpm_counter_previous = z;
 }
 
-void i_exti_4_15()
+static void ic_fanctl(enum pin p)
 {
+	assert(p == cfg_fan.rpm);
 	rpm_counter++;
-	exti->pr.pif12 = 1;
 }
 
 void fanctl_setspeed(uint8_t speed)
 {
 	// [0,255] → [0,80]
-	tim2->ccr3 = speed * 1000 / 3556;
+	*get_ctltim_ccr() = speed * 1000 / 3556;
 	rpm_target_delta = -1;
 }
 

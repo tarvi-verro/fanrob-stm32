@@ -64,6 +64,11 @@ struct tim_ccer {
 		 cc5e : 1, cc5p : 1, : 2, cc6e : 1, cc6p : 1, : 10;
 };
 
+struct tim_bdtr {
+	uint32_t dtg : 8, lock : 2, ossi : 1, ossr : 1, bke : 1, bkp : 1,
+		 aoe : 1, moe : 1, bkf : 4, bk2f : 4, bk2e : 1, bk2p : 1, : 6;
+};
+
 struct tim_reg {
 	struct tim_cr1 cr1;		// 0x00
 	struct tim_cr2 cr2;		// 0x04
@@ -82,7 +87,7 @@ struct tim_reg {
 	uint32_t ccr2;			// 0x38
 	uint32_t ccr3;			// 0x3C
 	uint32_t ccr4;			// 0x40
-	uint32_t bdtr;			// 0x44
+	struct tim_bdtr bdtr;		// 0x44
 	uint32_t dcr;			// 0x48
 	uint32_t dmar;			// 0x4C
 	uint32_t or1;			// 0x50

@@ -62,13 +62,13 @@ struct spi_txcrcr {
 };
 
 struct spi_reg {
-	struct spi_cr1 cr1;
-	struct spi_cr2 cr2;
-	struct spi_sr sr;
-	struct spi_dr dr;
-	struct spi_crcpr crcpr;
-	struct spi_rxcrcr rxcrcr;
-	struct spi_txcrcr txcrcr;
+	struct spi_cr1 cr1;		// 0x00
+	struct spi_cr2 cr2;		// 0x04
+	struct spi_sr sr;		// 0x08
+	struct spi_dr dr;		// 0x0C
+	struct spi_crcpr crcpr;		// 0x10
+	struct spi_rxcrcr rxcrcr;	// 0x14
+	struct spi_txcrcr txcrcr;	// 0x18
 };
 
 _Static_assert (offsetof(struct spi_reg, txcrcr) == 0x18,

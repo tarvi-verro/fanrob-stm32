@@ -3,7 +3,12 @@
 #include "cmd.h"
 #include "uart.h"
 #include "dma.h"
-#include "fanctl.h"
+
+#ifdef CONF_F0
+// First port usart.c to F0
+#warning cmd not supported on target
+ __attribute__ ((weak)) void cmd_handle(char *cmd, int len) {}
+#else
 
 extern char uart_readbuf[14]; /* uart.c */
 
@@ -99,4 +104,4 @@ extern void clock_cmd(char *cmd, int len);
 	uart_puts("\"\r\n");
 }
 
-
+#endif

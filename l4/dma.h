@@ -74,8 +74,8 @@ _Static_assert(sizeof(union dma_cselr) == 0x4,
 struct dma_ch {
 	struct dma_ccr ccr;
 	struct dma_cndtr cndtr; /* dma_cndtr */
-	void *cpar;
-	void *cmar;
+	volatile void *cpar;
+	volatile void *cmar;
 	uint32_t _res2;
 };
 _Static_assert (sizeof(void *) == 0x4, "Wrong size for pointers!");

@@ -16,7 +16,11 @@ void (*alarm_callb)() = NULL;
 #if 1
 void i_rtc_alra()
 {
+#ifdef CONF_L4
+	exti->pr1.pif18 = 1; /* writing 1 clears bit */
+#else
 	exti->pr.pif17 = 1; /* writing 1 clears bit */
+#endif
 	rtc->isr.alraf = 0;
 	if (alarm_callb == NULL)
 		return;
@@ -103,14 +107,14 @@ void clock_init_wuk()
 
 void clock_init_lse()
 {
-#ifdef CONF_L4
+#if defined(CONF_F0) || defined(CONF_L4)
 	rcc->bdcr.rtcsel = RCC_RTCSEL_LSE;
 
 	rcc->bdcr.lseon = 1;
 	rcc->bdcr.lsebyp = 0;
 	while (!rcc->bdcr.lserdy); /* wait for lse to get ready */
 #endif
-#ifdef CONF_L0
+#if defined(CONF_L0)
 	rcc->csr.rtcsel = RCC_RTCSEL_LSE;
 
 	rcc->csr.lseon = 1;
@@ -153,17 +157,24 @@ void setup_clock(void)
 
 	/*
 	 * Enable RTC interrupts
-	 * On F0, L0 and L4:
+	 * On F0, L0:
 	 * exti 17: alr
 	 * exti 20: wut
+	 *
+	 * On L4:
+	 * exti 18: alr
+	 * exti 20: wut
 	 */
-	exti->imr.im20 = exti->imr.im17 = 1;
-	exti->rtsr.rt20 = exti->rtsr.rt17 = 1;
-	exti->pr.pif20 = exti->pr.pif17 = 1;
 #ifdef CONF_L4
+	exti->imr1.im20 = exti->imr1.im18 = 1;
+	exti->rtsr1.rt20 = exti->rtsr1.rt18 = 1;
+	exti->pr1.pif20 = exti->pr1.pif18 = 1;
 	nvic_iser[0] |= 1 << 3; // wut
 	nvic_iser[1] |= 1 << 9; // alr
 #else
+	exti->imr.im20 = exti->imr.im17 = 1;
+	exti->rtsr.rt20 = exti->rtsr.rt17 = 1;
+	exti->pr.pif20 = exti->pr.pif17 = 1;
 	nvic_iser[0] |= 1 << 2; // glob
 #endif
 
@@ -258,10 +269,14 @@ void clock_cmd(char *cmd, int len)
 __attribute__ ((weak)) void rpm_collect_1hz() {}
 __attribute__ ((weak)) void i_rtc_alrb() {}
 
-static void i_rtc_wut()
+void i_rtc_wut()
 {
 	rtc->isr.wutf = 0;
+#ifdef CONF_L4
+	exti->pr1.pif20 = 1;
+#else
 	exti->pr.pif20 = 1;
+#endif
 	seconds++;
 	rpm_collect_1hz();
 }

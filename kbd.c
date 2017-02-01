@@ -1,21 +1,15 @@
+#include "gpio-abs.h"
+#define CFG_KBD
+#include "kbd.h"
 #include "conf.h"
 
-#ifndef CONF_F0
-#warning kbd not supported on target
-void setup_kbd() {}
-void kbd_tick() {}
-void kbd_tick_slow() {}
-#else
-
-#include "exti.h"
+#include "exti-abs.h"
+#include "assert.h"
 #include "rcc.h"
-#include "gpio.h"
-#include "syscfg.h"
 #include "lcd-com.h" /* bgset */
 #include <stdbool.h>
 #include "app.h"
 extern struct app *app_top;
-extern void assert(bool);
 
 static uint8_t key_states_now = 0;
 static uint8_t key_states_last = 0;
@@ -123,35 +117,33 @@ void kbd_tick()
 	}
 }
 
-void i_exti_4_15(void)
+static void ic_kbd(enum pin p);
+
+__attribute__((section(".rodata.exti.gpio.callb"))) void (*const exti_callb)(enum pin) = ic_kbd;
+
+static void ic_kbd(enum pin p)
 {
-	if (exti->pr.pif10) { /* pin_up */
-		exti->pr.pif10 = 1;
-		if (io_kbd->idr.pin_up)
+	int v = gpio_read(p);
+	if (p == cfg_kbd.up) { /* pin_up */
+		if (v)
 			key_states_now |= EV_KEY_UP;
 		else
 			key_states_now &= ~(EV_KEY_UP);
 		key_changes |= EV_KEY_UP;
-	}
-	if (exti->pr.pif11) { /* pin_down */
-		exti->pr.pif11 = 1;
-		if (io_kbd->idr.pin_down)
+	} else if (p == cfg_kbd.down) { /* pin_down */
+		if (v)
 			key_states_now |= EV_KEY_DOWN;
 		else
 			key_states_now &= ~(EV_KEY_DOWN);
 		key_changes |= EV_KEY_DOWN;
-	}
-	if (exti->pr.pif4) { /* pin_left */
-		exti->pr.pif4 = 1;
-		if (io_kbd->idr.pin_left)
+	} else if (p == cfg_kbd.left) { /* pin_left */
+		if (v)
 			key_states_now |= EV_KEY_LEFT;
 		else
 			key_states_now &= ~(EV_KEY_LEFT);
 		key_changes |= EV_KEY_LEFT;
-	}
-	if (exti->pr.pif5) { /* pin_right */
-		exti->pr.pif5 = 1;
-		if (io_kbd->idr.pin_right)
+	} else if (p == cfg_kbd.right) { /* pin_right */
+		if (v)
 			key_states_now |= EV_KEY_RIGHT;
 		else
 			key_states_now &= ~(EV_KEY_RIGHT);
@@ -162,32 +154,24 @@ void i_exti_4_15(void)
 void setup_kbd()
 {
 	cmb_bgval_upload();
-	rcc->ahbenr.iop_kbd_en = 1;
-	io_kbd->moder.pin_up = GPIO_MODER_IN;
-	io_kbd->moder.pin_down = GPIO_MODER_IN;
-	io_kbd->pupdr.pin_up = GPIO_PUPDR_PULLDOWN;
-	io_kbd->pupdr.pin_down = GPIO_PUPDR_PULLDOWN;
+	struct gpio_conf bcfg = {
+		.mode = GPIO_MODER_IN,
+		.pupd = GPIO_PUPDR_PULLDOWN,
+	};
+	gpio_configure(cfg_kbd.up, &bcfg);
+	gpio_configure(cfg_kbd.down, &bcfg);
+	gpio_configure(cfg_kbd.left, &bcfg);
+	gpio_configure(cfg_kbd.right, &bcfg);
 
-	io_kbd->moder.pin_left = GPIO_MODER_IN;
-	io_kbd->moder.pin_right = GPIO_MODER_IN;
-	io_kbd->pupdr.pin_left = GPIO_PUPDR_PULLDOWN;
-	io_kbd->pupdr.pin_right = GPIO_PUPDR_PULLDOWN;
+	struct exti_conf ecfg = {
+		.im = 1,
+		.ft = 1,
+		.rt = 1,
+	};
 
-	exti->imr.im10 = exti->imr.im11 = exti->imr.im4 = exti->imr.im5 = 1;
-
-	exti->rtsr.rt10 = exti->rtsr.rt11 = exti->rtsr.rt4 = exti->rtsr.rt5 = 1;
-
-	exti->ftsr.tr10 = exti->ftsr.tr11 = exti->ftsr.tr4 = exti->ftsr.tr5 = 1;
-
-	exti->pr.pif10 = exti->pr.pif11 = exti->pr.pif4 = exti->pr.pif5 = 1;
-
-	syscfg->exticr2.exti4 = SYSCFG_EXTI_PC;
-	syscfg->exticr2.exti5 = SYSCFG_EXTI_PC;
-	syscfg->exticr3.exti10 = SYSCFG_EXTI_PC;
-	syscfg->exticr3.exti11 = SYSCFG_EXTI_PC;
-
-	nvic_iser[0] |= 1 << 7;
-
+	exti_configure_pin(cfg_kbd.up, &ecfg, &exti_callb);
+	exti_configure_pin(cfg_kbd.down, &ecfg, &exti_callb);
+	exti_configure_pin(cfg_kbd.left, &ecfg, &exti_callb);
+	exti_configure_pin(cfg_kbd.right, &ecfg, &exti_callb);
 }
 
-#endif

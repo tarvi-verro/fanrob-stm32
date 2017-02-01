@@ -1,3 +1,8 @@
+#define CFG_UART
+#include "gpio-abs.h"
+#define CFG_ASSERT
+#include "assert-c.h"
+#include "uart.h"
 #include "conf.h"
 
 #ifdef CONF_F0
@@ -11,44 +16,31 @@ void uart_puts_int(unsigned z) {}
 void setup_uart() {}
 #else
 
+#ifndef ic_dma_receiver
+#error Configuration had to define ic_dma_receiver!
+#endif
 
 #include "lpuart.h"
 #include "exti.h"
 #include "rcc.h"
 #include "gpio.h"
 #include "dma.h"
-#include "uart.h"
 #include <stdbool.h>
 
 
 static void setup_uart_pins()
 {
-	rcc->iop_uart_rcc.iop_uart_en = 1;
+	struct gpio_conf gcfg = {
+		.mode = GPIO_MODER_AF,
+		.ospeed = GPIO_OSPEEDR_MEDIUM,
+		.otype = GPIO_OTYPER_PP,
+		.pupd = GPIO_PUPDR_NONE,
+		.alt = cfg_uart.alt,
+	};
+	gpio_configure(cfg_uart.tx, &gcfg);
 
-	io_uart->moder.pin_uart_tx = GPIO_MODER_AF;
-	io_uart->moder.pin_uart_rx = GPIO_MODER_AF;
-
-#ifdef CONF_L4
-	io_uart->afr.pin_uart_tx = 8;
-	io_uart->afr.pin_uart_rx = 8;
-#elif defined(CONF_L0)
-	io_uart->afr.pin_uart_tx = 6;
-	io_uart->afr.pin_uart_rx = 6;
-#endif
-
-	io_uart->ospeedr.pin_uart_tx = GPIO_OSPEEDR_MEDIUM;
-	io_uart->ospeedr.pin_uart_rx = GPIO_OSPEEDR_MEDIUM;
-
-	io_uart->otyper.pin_uart_tx = GPIO_OTYPER_PP;
-	io_uart->otyper.pin_uart_rx = GPIO_OTYPER_OD;
-
-	io_uart->pupdr.pin_uart_tx = GPIO_PUPDR_NONE;
-	io_uart->pupdr.pin_uart_rx = GPIO_PUPDR_NONE;
-
-	//io_uart->bsrr.reset.pin_uart_tx = 1;
-	//io_uart->bsrr.reset.pin_uart_rx = 1;
-
-
+	gcfg.otype = GPIO_OTYPER_OD;
+	gpio_configure(cfg_uart.rx, &gcfg);
 }
 
 void uart_puts_visible(const char *s)
@@ -273,9 +265,9 @@ void setup_uart()
 #endif
 	lpuart1->cr1.re = 1;
 	while (!lpuart1->isr.reack);
+	uart_puts("jes\r\n");
 }
 
-extern void assert(bool); // main.c
 extern void cmd_rotate(); // cmd.c
 
 void ic_dma_receiver()
@@ -292,7 +284,7 @@ void ic_dma_receiver()
 int uart_readbuf_length()
 {
 #ifdef CONF_L4
-			return sizeof(uart_readbuf) - dma2->ch7.cndtr;
+			return sizeof(uart_readbuf) - dma2->ch7.cndtr.ndt;
 #elif defined(CONF_L0)
 			return sizeof(uart_readbuf) - dma1->ch3.cndtr.ndt;
 #endif
@@ -305,7 +297,7 @@ void i_lpuart1()
 	// lpuart1->icr.cmcf = 1	// reset character match flag
 	assert(lpuart1->isr.cmf); // character match flag
 	lpuart1->icr.cmcf = 1; // reset character match flag
-	io_green->odr.pin_green ^= 1;
+	gpio_flip(cfg_assert.led);
 #endif
 }
 

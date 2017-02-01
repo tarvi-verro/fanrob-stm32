@@ -87,7 +87,7 @@ vecs:
 	.word undef_interr	// 0x4C, flash global interr
 	.word undef_interr	// 0x50, RCC global
 	.word i_exti_0_1	// 0x54, EXTI_0_1		1 << 5
-	.word undef_interr	// 0x58, EXTI_2_3
+	.word i_exti_2_3	// 0x58, EXTI_2_3
 	.word i_exti_4_15	// 0x5C, EXTI_4_15		1 << 7
 	.word 0			// 0x60, reserved
 	.word undef_interr	// 0x64, DMA_CH1
@@ -123,6 +123,9 @@ vecs:
 
 	.weak i_exti_0_1
 	.thumb_set i_exti_0_1,Default_Handler
+
+	.weak i_exti_2_3
+	.thumb_set i_exti_2_3,Default_Handler
 
 	.weak i_exti_4_15
 	.thumb_set i_exti_4_15,Default_Handler

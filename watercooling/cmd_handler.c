@@ -24,7 +24,7 @@ void cmd_handle(char *cmd, int len)
 				"\tcn: seconds since startup\r\n"
 				"\tf: set fan speed cycle\r\n"
 				"\tR: get RPM counter\r\n"
-				"\tr: set target RPM"
+				"\tr: set target RPM\r\n"
 				"\t?: display this\r\n");
 		break;
 	default:

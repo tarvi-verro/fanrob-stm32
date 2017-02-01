@@ -1,4 +1,4 @@
-#include "regs.h"
+#pragma once
 
 #ifdef CONF_L4
 #include "conf-l4.h"
@@ -7,3 +7,5 @@
 #else
 #error target not configured
 #endif
+
+#include "regs.h"

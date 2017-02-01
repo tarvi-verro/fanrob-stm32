@@ -9,3 +9,11 @@ extern void uart_puts_int(unsigned z);
 
 extern void setup_uart();
 
+#ifdef CFG_UART
+struct uart_configuration {
+	enum pin tx;
+	enum pin rx;
+	int alt;
+};
+static const struct uart_configuration cfg_uart;
+#endif

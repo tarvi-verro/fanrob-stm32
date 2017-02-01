@@ -33,6 +33,10 @@ SECTIONS {
 
 	.rodata : {
 		. = ALIGN(4);
+		_rodata_exti_gpio_callb_s = .;
+		*(.rodata.exti.gpio.callb*)
+		_rodata_exti_gpio_callb_e = .;
+		. = ALIGN(4);
 		*(.rodata*)
 		. = ALIGN(4);
 	} > FLASH

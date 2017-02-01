@@ -1,3 +1,4 @@
+#pragma once
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -57,3 +58,23 @@ extern void lcd_clear();
  */
 extern void setup_lcd(void);
 
+#ifdef CFG_LCD
+struct lcd_configuration {
+	enum pin vdd;
+	enum pin res;
+	enum pin dc;
+
+	enum pin bg;
+	enum tim_preset_ch bg_tim_fast_ch;
+	int gpio_af_bg;
+
+	enum pin nss;
+	enum pin mosi;
+	enum pin sck;
+	int gpio_af_spi;
+
+	volatile struct spi_reg *spi;
+	volatile struct dma_reg *dma;
+};
+static const struct lcd_configuration cfg_lcd;
+#endif

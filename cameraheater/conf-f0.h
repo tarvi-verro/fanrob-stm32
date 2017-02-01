@@ -1,47 +1,100 @@
+/* conf for the STM32F0308Discovery */
 
-/* PC8 is the blue led */
-#define io_blue gpio_reg_c
-#define iop_blue_en iopcen
-#define pin_blue pin8
 
-#define io_green gpio_reg_c
-#define iop_green_en iopcen
-#define iop_green_rcc ahbenr
-#define pin_green pin9
+#ifdef CFG_MAIN
+static const struct main_configuration cfg_main = {
+	.blue = PC8, /* PC8 is the blue led */
+	.user = PA0, /* a blue pressable button */
+};
+#endif
 
-#define io_user gpio_reg_a
-#define iop_user_en iopaen
-#define pin_user pin0
 
-/* output signal to camera */
-#define io_camsig gpio_reg_c
-#define iop_camsig_en iopcen
-#define pin_camsig pin3
+#ifdef CFG_ASSERT
+static const struct assert_configuration cfg_assert = {
+	.led = PC9,
+};
+#endif
 
-/* keybd; this is more hardcoded than it impresses */
-#define io_kbd gpio_reg_c
-#define iop_kbd_en iopcen
-#define pin_up pin10
-#define pin_down pin11
-#define pin_left pin4
-#define pin_right pin5
 
-/* lcd stuff */
-#define io_lcd gpio_reg_a
-#define pin_lcd_vdd pin1
-#define pin_lcd_res pin2
-#define pin_lcd_dc pin3
-#define pin_lcd_nss pin4
-#define pin_lcd_sck pin5
-#define pin_lcd_bg pin6
-#define pin_lcd_mosi pin7
+#ifdef CFG_KBD
+static const struct kbd_configuration cfg_kbd = {
+	.left = PC4,
+	.down = PC11,
+	.up = PC10,
+	.right = PC5,
+};
+#endif
 
-#define spi_lcd spi1_reg
+
+#ifdef CFG_LCD
+static const struct lcd_configuration cfg_lcd = {
+	.vdd = PA1,
+	.res = PA2,
+	.dc = PA3,
+
+	.bg = PA6,
+	.bg_tim_fast_ch = TIM_CH1,
+	.gpio_af_bg = 1, /* tim3_ch1 */
+
+	.sck = PA5,
+	.nss = PA4,
+	.mosi = PA7,
+	.gpio_af_spi = 0, /* spi1 */
+
+	.spi = spi1_macro,
+	.dma = dma_macro,
+};
 #define ch_lcd ch3 /* DMA CH3 connects to spi1-tx */
-#define ch_lcdbg ch1 /* TIM3 PWM channel */
+#endif
 
-/* heater wire */
-#define io_heat gpio_reg_b
-#define iop_heat_en iopben
-#define pin_heat pin1
 
+#ifdef CFG_UART
+static const struct uart_configuration cfg_uart = {
+	.tx = PNONE,
+	.rx = PNONE,
+	.alt = 0,
+};
+#endif
+
+
+#ifdef CFG_CAMSIG
+static const struct camsig_configuration cfg_camsig = {
+	.cam = PC3,
+};
+#endif
+
+
+#ifdef CFG_HEAT
+static const struct heater_configuration cfg_heat = {
+	.mosfet = PB1,
+	.gpio_af_tim = 0,
+	.mosfet_tim_slow_ch = TIM_CH1,
+
+	.battery = PNONE,
+};
+#endif
+
+
+#ifdef CFG_FAST
+static const struct tim_fast_configuration cfg_fast = {
+	.tim = tim3_macro,
+	.ch1 = { /* LCD BG */
+		.out.ccs = TIM_CCS_OUT,
+		.out.ocm = 6, /* 110 -- pwm mode 1 */
+		.out.ocpe = 1, /* preload enable */
+	},
+	.cc1e = 1,
+};
+#endif
+
+#ifdef CFG_SLOW
+static const struct tim_slow_configuration cfg_slow = {
+	.tim = tim14_macro,
+	.ch1 = { /* heater wire */
+		.out.ccs = TIM_CCS_OUT,
+		.out.ocm = 6, /* 110 -- pwm mode 1 */
+		.out.ocpe = 1, /* preload enable */
+	},
+	.cc1e = 1,
+};
+#endif

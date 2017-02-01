@@ -1,34 +1,31 @@
 #include <stdint.h>
 
-/*
- * PA2 (A7) → lpuart1 tx
- * PA3 (A2) → lpuart1 rx
- */
-#define io_uart gpio_reg_a
-#define iop_uart_en gpioaen
-#define iop_uart_rcc ahb2enr
-#define pin_uart_tx pin2
-#define pin_uart_rx pin3
 
-/* PA12 (D2) → gpio, rpm counter */
-#error rpm counter gpio undefined
-//#define io_rpm gpio_reg_a
-//#define iop_rpm_en iopaen
-//#define iop_rpm_rcc iopenr
-//#define pin_rpm pin12
-
-/* PB0 (D3) → TIM2_CH3 */
-//#define io_fanctl gpio_reg_b
-//#define iop_fanctl_en iopben
-//#define iop_fanctl_rcc iopenr
-//#define pin_fan1_ctl pin0
-
-/* PB3 is LD3, green led */
-#define io_green gpio_reg_b
-#define iop_green_en gpioben
-#define iop_green_rcc ahb2enr
-#define pin_green pin3
-
+#ifdef CFG_UART
+static const struct uart_configuration cfg_uart = {
+	.tx = PA2, /* A7 → lpuart1 tx */
+	.rx = PA3, /* A2 → lpuart1 rx */
+	.alt = 8,
+};
 /* Configure uart.c */
 #define ic_dma_receiver i_dma2_ch7
+#endif
+
+
+#ifdef CFG_FANCTL
+static const struct fanctl_configuration cfg_fan = {
+	.rpm = PB5, /* D11 */
+	.ctl = PA11, /* D10 */
+	.ctl_tim_af = 1,
+	.ctl_tim_ch = TIM_CH4,
+	.ctl_tim = tim1_macro,
+};
+#endif
+
+
+#ifdef CFG_ASSERT
+static const struct assert_configuration cfg_assert = {
+	.led = PB3, /* LD3, green led */
+};
+#endif
 

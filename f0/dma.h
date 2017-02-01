@@ -33,7 +33,7 @@ enum {
 	DMA_MSIZE_32,
 };
 enum {
-	DMA_DIR_FPERIP, DMA_DIR_FMEM,
+	DMA_DIR_FROM_PERIP, DMA_DIR_FROM_MEM,
 };
 struct dma_ccr {
 	uint32_t en : 1, tcie : 1, htie : 1, teie : 1, dir : 1, circ : 1,
@@ -41,12 +41,16 @@ struct dma_ccr {
 		 mem2mem : 1, : 17;
 };
 
+struct dma_cndtr {
+	uint32_t ndt : 16, : 16;
+};
+
 struct dma_ch {
 	struct dma_ccr ccr;
-	uint32_t ndt; /* dma_cndtr */
+	struct dma_cndtr cndtr; /* dma_cndtr */
 	//uint16_t _res;
-	uint32_t pa; /* dma_cpar */
-	uint32_t ma; /* dma_cmar */
+	volatile void *cpar; /* dma_cpar */
+	volatile void *cmar; /* dma_cmar */
 	uint32_t _res2;
 };
 _Static_assert (sizeof(struct dma_ch) == (0x1c - 0x8),
