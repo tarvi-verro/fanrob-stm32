@@ -5,6 +5,8 @@ extern int uart_readbuf_length();
 extern void uart_putc(char c);
 extern void uart_puts(const char *s);
 extern void uart_puts_visible(const char *s);
+extern void uart_puts_hex(unsigned z, int minwidth);
+extern void uart_puts_hex_0x(unsigned z);
 extern void uart_puts_int(unsigned z);
 
 extern void setup_uart();

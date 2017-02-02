@@ -1,5 +1,6 @@
 
 extern void setup_onewire();
+extern void ow_cmd(char *cmd, int len);
 
 #ifdef CFG_ONEWIRE
 struct onewire_configuration {

@@ -68,6 +68,40 @@ void uart_puts_visible(const char *s)
 	}
 }
 
+void uart_puts_hex_0x(unsigned z)
+{
+	if (!z) {
+		uart_puts("0x0");
+		return;
+	}
+	uart_puts("0x");
+	int i;
+	for (i = 0; !(z & 0xf0000000); z <<= 4, i++);
+	for (; i < 8; z <<= 4, i++) {
+		char h = (z >> 28) & 0xf;
+		if (h > 9)
+			uart_putc('A' + h - 10);
+		else
+			uart_putc('0' + h);
+	}
+}
+
+void uart_puts_hex(unsigned z, int minwidth)
+{
+	if (!z) {
+		return;
+	}
+	int i;
+	for (i = 0; !(z & 0xf0000000) && i < 8 - minwidth; z <<= 4, i++);
+	for (; i < 8; z <<= 4, i++) {
+		char h = (z >> 28) & 0xf;
+		if (h > 9)
+			uart_putc('A' + h - 10);
+		else
+			uart_putc('0' + h);
+	}
+}
+
 void uart_puts_int(unsigned z)
 {
 	char buf[sizeof("4294967295")];

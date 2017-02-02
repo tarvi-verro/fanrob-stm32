@@ -13,11 +13,15 @@
 #include "kbd.h"
 #include "adc-c.h"
 #include "uart.h"
+#include "one-wire.h"
 
 #include "fanctl.h"
 
 #include "clock.h"
 
+
+#define _MAC2STR(X) #X
+#define MAC2STR(X) _MAC2STR(X)
 
 void undef_interr()
 {
@@ -30,6 +34,35 @@ void (*app_update)() = NULL;
 
 extern void cmd_check(); /* cmd.c */
 
+void getclock(char *cmd, int len)
+{
+	uart_puts("Clockinfo:");
+	char *sel[] = {
+		[SW_MSI_OSC] = "msi",
+		[SW_HSI16_OSC] = "hsi16",
+		[SW_HSE] = "hse",
+		[SW_PLL] = "pll",
+	};
+	char *msirange[] = {
+		[MSIRANGE0_65_kHz] = "65 kHz",
+		[MSIRANGE1_131_kHz] = "131 kHz",
+		[MSIRANGE2_262_kHz] = "262 kHz",
+		[MSIRANGE3_524_kHz] = "524 kHz",
+		[MSIRANGE4_1_MHz] = "1 MHz",
+		[MSIRANGE5_2_MHz] = "2 MHz",
+		[MSIRANGE6_4_MHz] = "4 MHz",
+	};
+	uart_puts("\r\n\tsysclk:\t");
+	uart_puts(sel[rcc->cfgr.sw]);
+	uart_puts("\r\n\trange:\t");
+	if (rcc->cfgr.sw == SW_MSI_OSC) {
+		uart_puts(msirange[rcc->icscr.msirange]);
+	} else {
+		uart_puts("?");
+	}
+	uart_puts("\r\n");
+}
+
 int main(void)
 {
 	int cnt = 0;
@@ -37,6 +70,7 @@ int main(void)
 
 	setup_fanctl();
 	setup_uart();
+	setup_onewire();
 	uart_puts("\r\n\nChip has been restarted!\r\n");
 	fanctl_setspeed(244);
 	while (1) {
