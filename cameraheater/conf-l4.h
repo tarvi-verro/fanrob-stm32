@@ -86,6 +86,7 @@ static const struct tim_fast_configuration cfg_fast = {
 		.out.ocpe = 1, /* preload enable */
 	},
 	.cc3e = 1,
+	.frequency = 200, // Hz
 };
 #endif
 

@@ -5,7 +5,7 @@
 /*
  * For L0 DMA1 (hw registers page 245, 253-254)
  *	   Request number | Channel 2	| Channel 3
- *	   		5 | LPUART1_TX	| LPUART1_RX
+ *			5 | LPUART1_TX	| LPUART1_RX
  */
 static const struct uart_configuration cfg_uart = {
 	.tx = PA2, /* A7 → lpuart1 tx */
@@ -26,11 +26,38 @@ static const struct fanctl_configuration cfg_fan = {
 	.rpm = PA12, /* D2 */
 	.ctl = PB0, /* D3 */
 	.ctl_tim_af = 5,
-	.ctl_tim_ch = TIM_CH3,
-	.ctl_tim = tim2_macro,
+	.ctl_fast_ch = TIM_CH3,
+	.ctl_initial_duty = 230,
 };
 #endif
 
+
+#ifdef CFG_FAST
+static const struct tim_fast_configuration cfg_fast = {
+	.tim = tim2_macro,
+	.ch3 = {
+		.out.ccs = TIM_CCS_OUT,
+		.out.ocm = 6,
+		.out.ocpe = 1,
+	},
+	.ch4 = {
+		.out.ccs = TIM_CCS_OUT,
+		.out.ocm = 6,
+		.out.ocpe = 1,
+	},
+	.cc3e = 1,
+	.cc4e = 1,
+	.frequency = 25000,
+};
+#endif
+
+#ifdef CFG_PUMP
+static const struct pump_configuration cfg_pump = {
+	.gaten = PB1,
+	.gaten_af = 5,
+	.fast_ch = TIM_CH4,
+};
+#endif
 
 #ifdef CFG_ASSERT
 static const struct assert_configuration cfg_assert = {

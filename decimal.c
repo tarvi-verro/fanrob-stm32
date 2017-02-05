@@ -1,5 +1,6 @@
 #include "lcd-com.h"
 #include <stdbool.h>
+#include <limits.h>
 
 extern void assert(bool);
 
@@ -52,3 +53,19 @@ void print_decimal_fixpt(void (*putc)(char), unsigned int d, int len, int exp,
 	print_decimal(putc, d, exp);
 }
 
+unsigned int parseBase10(const char *a, int len)
+{
+	int i;
+	for (i = 0; i < len; i++) {
+		if (a[i] > '9' || a[i] < '0') {
+			return UINT_MAX;
+		}
+	}
+	unsigned int sum = 0; int ex = 1;
+	for (int b = i-1; b >= 0; b--) {
+		sum += (a[b] - '0') * ex;
+		ex *= 10;
+	}
+	return sum;
+
+}

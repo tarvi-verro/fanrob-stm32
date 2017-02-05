@@ -21,6 +21,7 @@ struct tim_fast_configuration {
 	union tim_ccmr_ch ch3;
 	union tim_ccmr_ch ch4;
 	int cc1e : 1, cc2e : 1, cc3e : 1, cc4e : 1;
+	unsigned frequency;
 };
 static const struct tim_fast_configuration cfg_fast;
 #endif

@@ -13,3 +13,4 @@ extern void print_decimal(void (*putc)(char), unsigned int d, int len);
 extern void print_decimal_fixpt(void (*putc)(char), unsigned int d, int len, int exp,
 		int base_to_exp);
 
+extern unsigned int parseBase10(const char *a, int len);

@@ -4,6 +4,7 @@
 #include "uart.h"
 #include "fanctl.h"
 #include "one-wire.h"
+#include "pump.h"
 
 void getclock();
 
@@ -27,6 +28,9 @@ void cmd_handle(char *cmd, int len)
 	case 'o':
 		ow_cmd(cmd, len);
 		break;
+	case 'p':
+		pump_cmd(cmd, len);
+		break;
 	case '?':
 		uart_puts("List of commands:\r\n"
 				"\tc*: clock (get,set)\r\n"
@@ -34,6 +38,7 @@ void cmd_handle(char *cmd, int len)
 				"\tf: set fan speed cycle\r\n"
 				"\tR: get RPM counter\r\n"
 				"\tr: set target RPM\r\n"
+				"\tp: set pump duty cycle\r\n"
 				"\ts: display some info about frequencies\r\n"
 				"\to: one-wire commands\r\n"
 				"\t?: display this\r\n");

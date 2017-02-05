@@ -1,16 +1,17 @@
 #define CFG_FANCTL
 #include "gpio-abs.h"
+#include "tim.h"
+#include "tim-preset.h"
 #include "fanctl.h"
 #include "conf.h"
 
-#include <limits.h>
-#include "tim.h"
 #include "rcc-abs.h"
 #include "gpio.h"
 #include "uart.h"
 #include "exti-abs.h"
 #include "syscfg.h"
 #include "assert-c.h"
+#include "decimal.h"
 
 #ifndef CONF_L0
 #error "fanctl needs configuring for given target!"
@@ -43,60 +44,13 @@ static void setup_fanctl_pins()
 	exti_configure_pin(cfg_fan.rpm, &rpm_exti, &fanctl_exti_cb);
 }
 
-static volatile uint32_t *get_ctltim_ccr()
-{
-	volatile struct tim_reg *tim = cfg_fan.ctl_tim;
-	switch (cfg_fan.ctl_tim_ch) {
-		case TIM_CH1: return &tim->ccr1;
-		case TIM_CH2: return &tim->ccr2;
-		case TIM_CH3: return &tim->ccr3;
-		case TIM_CH4: return &tim->ccr4;
-		default: assert(0);
-	}
-	return NULL;
-}
+uint8_t ctl_duty = 0;
 
 void setup_fanctl()
 {
-	volatile struct tim_reg *tim = cfg_fan.ctl_tim;
+	setup_tim_fast();
+	fanctl_setspeed(cfg_fan.ctl_initial_duty);
 	setup_fanctl_pins();
-	// Setup PWM
-	if (tim == tim2) {
-		rcc->apb1enr.tim2en = 1;
-		assert(rcc->cfgr.ppre1 == PPRE_NONE);
-	} else {
-		assert(0);
-	}
-	unsigned period = (rcc_get_sysclk()/2500 + 5) / 10;
-	assert(period > 20 && period < 64000);
-	tim->arr = period; /* auto-reload aka period */
-	tim->psc = 0; /* prescaler, set to zero, take all the accuracy */
-	tim->egr.ug = 1;
-
-	tim->cr1.dir = TIM_DIR_UPCNT; /* upcounter */
-
-	volatile union tim_ccmr_ch *ch;
-
-	switch (cfg_fan.ctl_tim_ch) {
-	case TIM_CH1: ch = &tim->ccmr.ch1; break;
-	case TIM_CH2: ch = &tim->ccmr.ch2; break;
-	case TIM_CH3: ch = &tim->ccmr.ch3; break;
-	case TIM_CH4: ch = &tim->ccmr.ch4; break;
-	default: assert(0);
-	}
-	ch->out.ccs = TIM_CCS_OUT;
-	ch->out.ocm = 6;
-	ch->out.ocpe = 1;
-
-	switch (cfg_fan.ctl_tim_ch) {
-	case TIM_CH1: tim->ccer.cc1e = 1; break;
-	case TIM_CH2: tim->ccer.cc2e = 1; break;
-	case TIM_CH3: tim->ccer.cc3e = 1; break;
-	case TIM_CH4: tim->ccer.cc4e = 1; break;
-	default: assert(0);
-	}
-	*get_ctltim_ccr() = 40;
-	tim->cr1.cen = 1; /* enable */
 }
 
 int rpm_target_delta = -1;
@@ -121,8 +75,8 @@ void rpm_chkspeed()
 	else if (offset < -l)
 		offset = -l;
 
-	volatile uint32_t *ccr = get_ctltim_ccr();
-	*ccr += offset;
+	ctl_duty += offset;
+	fanctl_setspeed(ctl_duty);
 }
 
 void rpm_collect_1hz()
@@ -145,31 +99,11 @@ static void ic_fanctl(enum pin p)
 	rpm_counter++;
 }
 
-void fanctl_setspeed(uint8_t speed)
+void fanctl_setspeed(uint8_t duty)
 {
-	volatile struct tim_reg *tim = cfg_fan.ctl_tim;
-	// [0,255] → [0,period-1]
-	unsigned period = tim->arr;
-	unsigned div = (255 * 10000 / (period-1) + 5) / 10;
-	*get_ctltim_ccr() = speed * 1000 / div;
+	ctl_duty = duty;
+	tim_fast_duty_set(cfg_fan.ctl_fast_ch, duty);
 	rpm_target_delta = -1;
-}
-
-unsigned int parseBase10(const char *a, int len)
-{
-	int i;
-	for (i = 0; i < len; i++) {
-		if (a[i] > '9' || a[i] < '0') {
-			return UINT_MAX;
-		}
-	}
-	unsigned int sum = 0; int ex = 1;
-	for (int b = i-1; b >= 0; b--) {
-		sum += (a[b] - '0') * ex;
-		ex *= 10;
-	}
-	return sum;
-
 }
 
 void fanctl_cmd(char *cmd, int len)
