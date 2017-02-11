@@ -65,7 +65,7 @@ int rpm_counter = 0;
 int rpm_counter_delta = 0;
 static int rpm_counter_previous = 0;
 
-static uint8_t duties[] = { 60, 120, 180, 200, 220, 230, 234, 237 };
+static uint8_t duties[] = { 60, 120, 180, 200, 220, 230, 234, 237, 240, 242, 244 };
 static int duties_selected; // Initially closest to cfg_fan_ctl_initial_duty
 static int duties_min_rpm = 300;
 
@@ -181,16 +181,17 @@ void fanctl_cmd(char *cmd, int len)
 
 		break;
 	case 'R':
-		uart_puts("RPM counter:");
-		uart_puts_int(rpm_counter);
+	case 'r':
+		uart_puts("RPM counter: ");
+		uart_puts_unsigned(rpm_counter);
 		uart_puts(", 1Hz delta: ");
 		int rpm = 30*rpm_counter_delta/2;
-		uart_puts_int(rpm);
+		uart_puts_unsigned(rpm);
 		if (rpm > 600)
 			uart_putc('+');
 		uart_puts("\r\n");
-		break;
-	case 'r':
+		if (*cmd == 'R')
+			break;
 		if (strategy != STRATEGY_DUTIES) {
 			uart_puts("Fanctl strategy set to duties.\r\n");
 			strategy = STRATEGY_DUTIES;
@@ -200,14 +201,14 @@ void fanctl_cmd(char *cmd, int len)
 		for (int i = 0; i < sizeof(duties); i++) {
 			if (i == duties_selected)
 				uart_putc('*');
-			uart_puts_int(duties[i]);
+			uart_puts_unsigned(duties[i]);
 			if (i != sizeof(duties) - 1)
 				uart_puts(", ");
 			else
 				uart_puts("\r\n");
 		}
 		uart_puts("Min speed: ");
-		uart_puts_int(duties_min_rpm);
+		uart_puts_unsigned(duties_min_rpm);
 		uart_puts("\r\n");
 		break;
 	default:

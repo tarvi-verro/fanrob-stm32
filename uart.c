@@ -12,6 +12,7 @@ void uart_puts_visible(const char *s) {}
 void uart_putc(char c) {}
 void uart_puts(const char *s) {}
 void uart_puts_int(unsigned z) {}
+void uart_puts_unsigned(unsigned z) {}
 
 void setup_uart() {}
 #else
@@ -29,6 +30,7 @@ void setup_uart() {}
 #include "gpio.h"
 #include "dma.h"
 #include <stdbool.h>
+#include "decimal.h"
 
 #define _MAC2STR(X) #X
 #define MAC2STR(X) _MAC2STR(X)
@@ -114,6 +116,11 @@ void uart_puts_int(unsigned z)
 	}
 	for (int i = j - 1; i >= 0; i--)
 		uart_putc('0' + buf[i]);
+}
+
+void uart_puts_unsigned(unsigned z)
+{
+	print_decimal(uart_putc, z, decimal_length(z));
 }
 
 void uart_puts(const char *s)
