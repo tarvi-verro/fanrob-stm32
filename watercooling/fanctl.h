@@ -13,6 +13,7 @@ struct fanctl_configuration {
 	enum tim_preset_ch ctl_fast_ch;
 	uint8_t ctl_initial_duty;
 	enum pin pwr_in;
+	enum pin pwr_sfn;
 };
 static const struct fanctl_configuration cfg_fan;
 #endif

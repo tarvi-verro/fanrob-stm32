@@ -46,7 +46,15 @@ static void setup_fanctl_pins()
 	};
 	exti_configure_pin(cfg_fan.rpm, &rpm_exti, &fanctl_exti_rpm_cb);
 
-	// Power input
+	// Small fan output
+	struct gpio_conf sfn_gpio = {
+		.mode = GPIO_MODER_OUT,
+		.pupd = GPIO_PUPDR_PULLDOWN,
+		.otype = GPIO_OTYPER_PP,
+	};
+	gpio_configure(cfg_fan.pwr_sfn, &sfn_gpio);
+
+	// 12V Power input
 	struct gpio_conf pwr_gpio = {
 		.mode = GPIO_MODER_IN,
 		.pupd = GPIO_PUPDR_PULLDOWN,
@@ -68,6 +76,8 @@ static int rpm_counter_previous = 0;
 static uint8_t duties[] = { 60, 120, 180, 200, 220, 230, 234, 237, 240, 242, 244 };
 static int duties_selected; // Initially closest to cfg_fan_ctl_initial_duty
 static int duties_min_rpm = 300;
+
+static int sfn_enabled = 1;
 
 static enum {
 	STRATEGY_DUTIES,
@@ -125,8 +135,10 @@ void rpm_collect_1hz()
 	int z = rpm_counter;
 	rpm_counter_delta = z - rpm_counter_previous;
 	rpm_counter_previous = z;
-	if ((skip & 2) == 2 && strategy == STRATEGY_DUTIES)
+	if ((skip & 2) == 2 && strategy == STRATEGY_DUTIES) {
 		rpm_chkspeed_duties();
+		gpio_write(cfg_fan.pwr_sfn, gpio_read(cfg_fan.pwr_in) && sfn_enabled);
+	}
 }
 
 static void ic_power(enum pin p)
@@ -210,6 +222,15 @@ void fanctl_cmd(char *cmd, int len)
 		uart_puts("Min speed: ");
 		uart_puts_unsigned(duties_min_rpm);
 		uart_puts("\r\n");
+		break;
+	case 'V':
+		sfn_enabled = !sfn_enabled;
+		uart_puts("Toggled small fan.\r\n");
+	case 'v':
+		if (sfn_enabled)
+			uart_puts("Small fan enabled.\r\n");
+		else
+			uart_puts("Small fan disabled.\r\n");
 		break;
 	default:
 		assert(1==2);

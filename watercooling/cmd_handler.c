@@ -23,6 +23,8 @@ void cmd_handle(char *cmd, int len)
 	case 'f':
 	case 'R':
 	case 'r':
+	case 'v':
+	case 'V':
 		fanctl_cmd(cmd, len);
 		break;
 	case 'o':
@@ -38,6 +40,8 @@ void cmd_handle(char *cmd, int len)
 				"\tf: set fan speed cycle\r\n"
 				"\tR: get RPM counter\r\n"
 				"\tr: set automatic rpm speed, show info\r\n"
+				"\tv: get small fan state\r\n"
+				"\tV: toggle small fan state\r\n"
 				//"\tp: set pump duty cycle\r\n"
 				"\ts: display some info about frequencies\r\n"
 				"\to: one-wire commands\r\n"

@@ -29,7 +29,8 @@ static const struct fanctl_configuration cfg_fan = {
 	.ctl_fast_ch = TIM_CH3,
 	.ctl_initial_duty = 230,
 
-	.pwr_in = PB7,
+	.pwr_in = PB7, /* D4, 12V line on/off */
+	.pwr_sfn = PB6, /* D5, Toggle small fan */
 };
 #endif
 
