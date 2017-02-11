@@ -18,12 +18,13 @@ void exti_configure_pin(enum pin p, struct exti_conf *cfg, void (*const *exti_ca
 
 	assert(p <= PNONE);
 
-	int callb_off = exti_callb - &_rodata_exti_gpio_callb_s;
+	uint64_t callb_off = exti_callb - &_rodata_exti_gpio_callb_s;
 
 	int z = p % 16;
-	gpio_callbs &= ~(0xf << (4 * z));
-	uint64_t bb = (callb_off + 1ll) << (4 * z);
-	gpio_callbs |= bb;
+	uint64_t  ba = ~(0xfll << (4 * z));
+	gpio_callbs &= ba;
+	ba = (callb_off + 1ll) << (4 * z);
+	gpio_callbs |= ba;
 
 #if defined(CONF_L0) || defined(CONF_F0)
 	switch (z) {

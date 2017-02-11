@@ -10,6 +10,7 @@ enum tim_preset_ch {
 	TIM_CH4
 };
 
+extern uint8_t tim_fast_count();
 extern void tim_fast_duty_set(enum tim_preset_ch ch, uint8_t d);
 extern void tim_slow_duty_set(enum tim_preset_ch ch, uint8_t d);
 

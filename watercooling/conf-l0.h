@@ -28,6 +28,8 @@ static const struct fanctl_configuration cfg_fan = {
 	.ctl_tim_af = 5,
 	.ctl_fast_ch = TIM_CH3,
 	.ctl_initial_duty = 230,
+
+	.pwr_in = PB7,
 };
 #endif
 

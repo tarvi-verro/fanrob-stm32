@@ -11,14 +11,17 @@
 #include "exti-abs.h"
 #include "syscfg.h"
 #include "assert-c.h"
+#include "clock.h"
 #include "decimal.h"
 
 #ifndef CONF_L0
 #error "fanctl needs configuring for given target!"
 #endif
 
+static void ic_power(enum pin p);
 static void ic_fanctl(enum pin p);
-__attribute__((section(".rodata.exti.gpio.callb"))) void (*const fanctl_exti_cb)(enum pin) = ic_fanctl;
+__attribute__((section(".rodata.exti.gpio.callb"))) void (*const fanctl_exti_rpm_cb)(enum pin) = ic_fanctl;
+__attribute__((section(".rodata.exti.gpio.callb"))) void (*const fanctl_exti_pwr_cb)(enum pin) = ic_power;
 
 static void setup_fanctl_pins()
 {
@@ -41,42 +44,71 @@ static void setup_fanctl_pins()
 		.im = 1,
 		.ft = 1,
 	};
-	exti_configure_pin(cfg_fan.rpm, &rpm_exti, &fanctl_exti_cb);
+	exti_configure_pin(cfg_fan.rpm, &rpm_exti, &fanctl_exti_rpm_cb);
+
+	// Power input
+	struct gpio_conf pwr_gpio = {
+		.mode = GPIO_MODER_IN,
+		.pupd = GPIO_PUPDR_PULLDOWN,
+	};
+	gpio_configure(cfg_fan.pwr_in, &pwr_gpio);
+	struct exti_conf pwr_exti = {
+		.im = 1,
+		.rt = 1,
+	};
+	exti_configure_pin(cfg_fan.pwr_in, &pwr_exti, &fanctl_exti_pwr_cb);
 }
 
-uint8_t ctl_duty = 0;
+uint8_t fixed_duty = 0;
 
-void setup_fanctl()
-{
-	setup_tim_fast();
-	fanctl_setspeed(cfg_fan.ctl_initial_duty);
-	setup_fanctl_pins();
-}
-
-int rpm_target_delta = -1;
 int rpm_counter = 0;
 int rpm_counter_delta = 0;
 static int rpm_counter_previous = 0;
 
-void rpm_chkspeed()
+static uint8_t duties[] = { 60, 120, 180, 200, 220, 230, 234, 237 };
+static int duties_selected; // Initially closest to cfg_fan_ctl_initial_duty
+static int duties_min_rpm = 300;
+
+static enum {
+	STRATEGY_DUTIES,
+	STRATEGY_FIXED,
+} strategy = STRATEGY_DUTIES;
+
+void duties_select_default()
 {
-	if (rpm_target_delta == -1)
-		return;
+	int delta = 255;
+	for (int i = 0; i < sizeof(duties); i++) {
+		int b = cfg_fan.ctl_initial_duty - duties[i];
+		if (b < 0) b = -b;
+		if (b < delta) {
+			delta = b;
+			duties_selected = i;
+		} else {
+			break;
+		}
+	}
+	tim_fast_duty_set(cfg_fan.ctl_fast_ch, cfg_fan.ctl_initial_duty);
+}
 
-	int offset = (rpm_counter_delta - rpm_target_delta)/3;
+void setup_fanctl()
+{
+	setup_tim_fast();
+	tim_fast_duty_set(cfg_fan.ctl_fast_ch, cfg_fan.ctl_initial_duty);
+	setup_fanctl_pins();
+	duties_select_default();
+}
 
-	if (!offset)
-		return;
-
-	int l = 1;
-
-	if (offset > l)
-		offset = l;
-	else if (offset < -l)
-		offset = -l;
-
-	ctl_duty += offset;
-	fanctl_setspeed(ctl_duty);
+void rpm_chkspeed_duties()
+{
+	int rpm = 30*rpm_counter_delta/2;
+	if (rpm < duties_min_rpm) {
+		duties_selected--;
+		if (duties_selected < 0) duties_selected = 0;
+		tim_fast_duty_set(cfg_fan.ctl_fast_ch, duties[duties_selected]);
+	} else if (duties_selected < sizeof(duties) - 1) {
+		duties_selected++;
+		tim_fast_duty_set(cfg_fan.ctl_fast_ch, duties[duties_selected]);
+	}
 }
 
 void rpm_collect_1hz()
@@ -84,26 +116,47 @@ void rpm_collect_1hz()
 	static unsigned skip = 0;
 	skip++;
 	if ((skip & 1) == 0) {
+		/*
 		if ((skip & 6) == 0)
 			rpm_chkspeed();
+		*/
 		return;
 	}
 	int z = rpm_counter;
 	rpm_counter_delta = z - rpm_counter_previous;
 	rpm_counter_previous = z;
+	if ((skip & 2) == 2 && strategy == STRATEGY_DUTIES)
+		rpm_chkspeed_duties();
+}
+
+static void ic_power(enum pin p)
+{
+	duties_select_default();
 }
 
 static void ic_fanctl(enum pin p)
 {
+	// Verify that we ain't getting noise
+	static int last = 0;
+	struct rtc_ssr c;
+	clock_get(NULL, NULL, &c);
+	int b =  c.ss - last;
+	if (b < 0) b = -b;
+	if (b < 10) return;
+	last = c.ss;
+
 	assert(p == cfg_fan.rpm);
 	rpm_counter++;
 }
 
 void fanctl_setspeed(uint8_t duty)
 {
-	ctl_duty = duty;
+	if (strategy != STRATEGY_FIXED) {
+		uart_puts("Fanctl set to fixed strategy.\r\n");
+		strategy = STRATEGY_FIXED;
+	}
+	fixed_duty = duty;
 	tim_fast_duty_set(cfg_fan.ctl_fast_ch, duty);
-	rpm_target_delta = -1;
 }
 
 void fanctl_cmd(char *cmd, int len)
@@ -131,24 +184,31 @@ void fanctl_cmd(char *cmd, int len)
 		uart_puts("RPM counter:");
 		uart_puts_int(rpm_counter);
 		uart_puts(", 1Hz delta: ");
-		uart_puts_int(30*rpm_counter_delta/2);
+		int rpm = 30*rpm_counter_delta/2;
+		uart_puts_int(rpm);
+		if (rpm > 600)
+			uart_putc('+');
 		uart_puts("\r\n");
 		break;
 	case 'r':
-		if (len <= 2 || cmd[1] != ' ') {
-			uart_puts("Expected a speed.\r\n");
-			return;
+		if (strategy != STRATEGY_DUTIES) {
+			uart_puts("Fanctl strategy set to duties.\r\n");
+			strategy = STRATEGY_DUTIES;
+			tim_fast_duty_set(cfg_fan.ctl_fast_ch, duties[duties_selected]);
 		}
-		sum = parseBase10(cmd + 2, len - 2);
-		if ((sum % 15) != 0) {
-			uart_puts("Must be a multiple of 15!\r\n");
-			return;
+		uart_puts("Duties: ");
+		for (int i = 0; i < sizeof(duties); i++) {
+			if (i == duties_selected)
+				uart_putc('*');
+			uart_puts_int(duties[i]);
+			if (i != sizeof(duties) - 1)
+				uart_puts(", ");
+			else
+				uart_puts("\r\n");
 		}
-		uart_puts("Setting by RPM: ");
-		uart_puts_int(sum);
+		uart_puts("Min speed: ");
+		uart_puts_int(duties_min_rpm);
 		uart_puts("\r\n");
-		rpm_target_delta = sum/15;
-		//tim2->ccr3 = 40;
 		break;
 	default:
 		assert(1==2);

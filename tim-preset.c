@@ -63,7 +63,6 @@ void setup_tim_slow()
 
 	/* Setup tim */
 	tim->arr = 2550; /* auto-reload aka period */
-	//tim->cnt = 500;
 	tim->psc = 32000 - 1; /* prescaler */
 	if (cfg_slow.cc1e)
 		tim->ccmr.ch1 = cfg_slow.ch1;
@@ -131,7 +130,6 @@ void setup_tim_fast()
 	unsigned period = (rcc_get_sysclk()*10/cfg_fast.frequency + 5) / 10;
 	assert(period < UINT16_MAX && period >= 20);
 	tim->arr = period; /* auto-reload aka period */
-	//tim->cnt = 500;
 	tim->psc = 0; /* prescaler */
 	if (cfg_fast.cc1e)
 		tim->ccmr.ch1 = cfg_fast.ch1;
@@ -160,5 +158,15 @@ void setup_tim_fast()
 		tim->ccer.cc3e = 1;
 	if (cfg_fast.cc4e)
 		tim->ccer.cc4e = 1;
+}
+
+uint8_t tim_fast_count()
+{
+	volatile struct tim_reg *tim = cfg_fast.tim;
+	unsigned period = tim->arr;
+	// cnt is in range [0..period-1]
+	unsigned cnt = tim->cnt;
+	cnt = cnt * UINT8_MAX / period;
+	return cnt;
 }
 

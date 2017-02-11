@@ -231,7 +231,9 @@ void clock_get(struct rtc_dr *date, struct rtc_tr *time,
 
 	if (date != NULL)
 		*date = rtc->dr;
-//	*subsec = rtc->ssr;
+
+	if (subsec != NULL)
+		*subsec = rtc->ssr;
 }
 
 static unsigned seconds = 0;

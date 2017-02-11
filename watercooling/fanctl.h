@@ -12,6 +12,7 @@ struct fanctl_configuration {
 	int ctl_tim_af;
 	enum tim_preset_ch ctl_fast_ch;
 	uint8_t ctl_initial_duty;
+	enum pin pwr_in;
 };
 static const struct fanctl_configuration cfg_fan;
 #endif

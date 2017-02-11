@@ -5,6 +5,7 @@ CC:=arm-none-eabi-gcc
 AS:=arm-none-eabi-as
 AR:=arm-none-eabi-ar
 LD:=arm-none-eabi-ld
+OC:=arm-none-eabi-objcopy
 
 # Where libgcc.a and the libnosys.a are, often times the version has to be
 # bumped.
@@ -23,6 +24,7 @@ PRINT_PRETTY:=1
 endif
 
 l0: $O/prg-l0
+l0-bin: $O/prg-l0.bin
 l4: $O/prg-l4
 
 chkpath:
@@ -32,7 +34,7 @@ chkpath:
 SRC:=main.c ../l0/early.S ../early_reset.c ../clock.c ../decimal.c \
 	../assert.c ../adc.c ../rcc.c ../uart.c fanctl.c ../cmd.c \
 	cmd_handler.c ../font-tiny.xcf ../exti-abs.c ../one-wire.c \
-	../tim-preset.c pump.c
+	../tim-preset.c
 
 OBJ:= \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \

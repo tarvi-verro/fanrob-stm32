@@ -19,6 +19,14 @@ else
 	$(LD) -T ../l0/linker.ld -o $@ $(filter-out ../l0/linker.ld, $^) $(LDFLAGS_L0)
 endif
 
+$O/prg-l0.bin: $O/prg-l0
+ifeq ($(PRINT_PRETTY), 1)
+	@printf "  OBJC\t$@\n"
+	@$(OC) -O binary $< $@
+else
+	$(OC) -O binary $< $@
+endif
+
 
 $O/%-l0.o: %.c | $O
 	@mkdir -p $(@D)
