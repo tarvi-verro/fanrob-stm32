@@ -73,7 +73,7 @@ int rpm_counter = 0;
 int rpm_counter_delta = 0;
 static int rpm_counter_previous = 0;
 
-static uint8_t duties[] = { 60, 120, 180, 200, 220, 230, 234, 237, 240, 242, 244 };
+static uint8_t duties[] = { 60, 120, 180, 200, 220, 230, 234, 237, /*240, 242, 244*/ };
 static int duties_selected; // Initially closest to cfg_fan_ctl_initial_duty
 static int duties_min_rpm = 300;
 
