@@ -41,14 +41,6 @@ static void setup_fanctl_pins()
 		gpio_configure(cfg_fan.fans[i].rpm, &rpm_gpio);
 	}
 
-	// Small fan output
-	struct gpio_conf sfn_gpio = {
-		.mode = GPIO_MODER_OUT,
-		.pupd = GPIO_PUPDR_PULLDOWN,
-		.otype = GPIO_OTYPER_PP,
-	};
-	gpio_configure(cfg_fan.pwr_sfn, &sfn_gpio);
-
 	// 12V Power input
 	struct gpio_conf pwr_gpio = {
 		.mode = GPIO_MODER_IN,
@@ -78,18 +70,16 @@ static int rpm_counter_previous[4] = { 0 };
 
 static uint8_t duties[] = { 62, 120, 169, 172, 175, 178, 182 };
 static int duties_selected[4]; // Initially closest to cfg_fan_ctl_initial_duty
-static int duties_target_rpm[4] = { 500, 500, 500, 500 };
-
-static int sfn_enabled = 1;
+static int duties_target_rpm[4] = { 1335, 500, 500, 500 };
 
 static enum {
 	STRATEGY_DUTIES,
 	STRATEGY_FIXED,
 } strategy[4] = {
-	[0] = STRATEGY_FIXED,
+	[0] = STRATEGY_DUTIES,
 	[1] = STRATEGY_FIXED,
 	[2] = STRATEGY_DUTIES,
-	[3] = STRATEGY_FIXED
+	[3] = STRATEGY_DUTIES
 };
 
 void duties_select_default()
@@ -186,7 +176,6 @@ void rpm_collect_1hz()
 
 	rpm_chkspeed_duties();
 
-	gpio_write(cfg_fan.pwr_sfn, gpio_read(cfg_fan.pwr_in) && sfn_enabled);
 	watch_print=1;
 }
 
@@ -309,10 +298,15 @@ void fanctl_cmd(char *cmd, int len)
 	case 'R':
 	case 'r':
 		fan = cmd[1] - '1';
-		if (len != 2 || fan < 0 || fan > 3) {
+		if (len < 2 || fan < 0 || fan > 3
+				|| (len > 2 && *cmd != 'r')
+				|| (len > 2 && *cmd == 'r' && cmd[2] != ' ')) {
 			uart_puts("Try: ");
 			uart_putc(*cmd);
-			uart_puts("[1:4]\r\n");
+			uart_puts("[1:4]");
+			if (*cmd == 'r')
+				uart_puts(" (target rpm)");
+			uart_puts("\r\n");
 			return;
 		}
 		print_rpminfo(fan, 1, 1);
@@ -324,16 +318,14 @@ void fanctl_cmd(char *cmd, int len)
 			tim_fast_duty_set(cfg_fan.fans[fan].ctl_fast_ch,
 					duties[duties_selected[fan]]);
 		}
+		if (len > 2) {
+			int ns = parseBase10(cmd + 3, len - 3);
+			duties_target_rpm[fan] = ns;
+			uart_puts("Target RPM set to ");
+			uart_puts_unsigned(ns);
+			uart_puts("\r\n");
+		}
 		print_dutiesinfo(fan);
-		break;
-	case 'V':
-		sfn_enabled = !sfn_enabled;
-		uart_puts("Toggled small fan.\r\n");
-	case 'v':
-		if (sfn_enabled)
-			uart_puts("Small fan enabled.\r\n");
-		else
-			uart_puts("Small fan disabled.\r\n");
 		break;
 	default:
 		assert(1==2);

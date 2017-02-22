@@ -24,7 +24,6 @@ static const struct uart_configuration cfg_uart = {
 #ifdef CFG_FANCTL
 static const struct fanctl_configuration cfg_fan = {
 	.pwr_in = PB7, /* D4, 12V line on/off */
-	.pwr_sfn = PB6, /* D5, Toggle small fan */
 
 	.fans = {
 		{ // fan1ctl
@@ -60,6 +59,16 @@ static const struct fanctl_configuration cfg_fan = {
 #ifdef CFG_FAST
 static const struct tim_fast_configuration cfg_fast = {
 	.tim = tim2_macro,
+	.ch1 = {
+		.out.ccs = TIM_CCS_OUT,
+		.out.ocm = 6,
+		.out.ocpe = 1,
+	},
+	.ch2 = {
+		.out.ccs = TIM_CCS_OUT,
+		.out.ocm = 6,
+		.out.ocpe = 1,
+	},
 	.ch3 = {
 		.out.ccs = TIM_CCS_OUT,
 		.out.ocm = 6,
@@ -70,6 +79,8 @@ static const struct tim_fast_configuration cfg_fast = {
 		.out.ocm = 6,
 		.out.ocpe = 1,
 	},
+	.cc1e = 1,
+	.cc2e = 1,
 	.cc3e = 1,
 	.cc4e = 1,
 	.frequency = 25000,

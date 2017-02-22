@@ -9,7 +9,6 @@ extern void fanctl_rpm_measure(int cnt); /* should be called from main loop */
 #ifdef CFG_FANCTL
 struct fanctl_configuration {
 	enum pin pwr_in;
-	enum pin pwr_sfn;
 	struct fan_configuration {
 		enum pin rpm;
 		enum pin ctl;
