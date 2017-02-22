@@ -23,14 +23,36 @@ static const struct uart_configuration cfg_uart = {
 
 #ifdef CFG_FANCTL
 static const struct fanctl_configuration cfg_fan = {
-	.rpm = PA12, /* D2 */
-	.ctl = PB0, /* D3 */
-	.ctl_tim_af = 5,
-	.ctl_fast_ch = TIM_CH3,
-	.ctl_initial_duty = 230,
-
 	.pwr_in = PB7, /* D4, 12V line on/off */
 	.pwr_sfn = PB6, /* D5, Toggle small fan */
+
+	.fans = {
+		{ // fan1ctl
+			.rpm = PA11, /* D10 */
+			.ctl = PA8, /* D9 */
+			.ctl_fast_ch = TIM_CH1,
+			.ctl_tim_af = 5,
+			.ctl_initial_duty = 170,
+		}, { // fan2ctl
+			.rpm = PB5, /* D11 */
+			.ctl = PA1, /* A1 */
+			.ctl_fast_ch = TIM_CH2,
+			.ctl_tim_af = 2,
+			.ctl_initial_duty = 170,
+		}, { // fan3ctl
+			.rpm = PA12, /* D2 */
+			.ctl = PB0, /* D3 */
+			.ctl_fast_ch = TIM_CH3,
+			.ctl_tim_af = 5,
+			.ctl_initial_duty = 170,
+		}, { // fan4ctl
+			.rpm = PB4, /* D12 */
+			.ctl = PB1, /* D6 */
+			.ctl_fast_ch = TIM_CH4,
+			.ctl_tim_af = 5,
+			.ctl_initial_duty = 170,
+		},
+	},
 };
 #endif
 

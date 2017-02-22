@@ -20,6 +20,25 @@ void tim_slow_duty_set(enum tim_preset_ch ch, uint8_t d)
 	}
 }
 
+uint8_t tim_fast_duty_get(enum tim_preset_ch ch)
+{
+	volatile struct tim_reg *tim = cfg_fast.tim;
+	unsigned period = tim->arr;
+
+	unsigned spd;
+	switch (ch) {
+	case TIM_CH1: spd = tim->ccr1; break;
+	case TIM_CH2: spd = tim->ccr2; break;
+	case TIM_CH3: spd = tim->ccr3; break;
+	case TIM_CH4: spd = tim->ccr4; break;
+	default: assert(0);
+	}
+
+	// [0,period-1] → [0,255]
+	unsigned div = ((period-1) * 10000 / 255 + 5) / 10;
+	return (uint8_t) ((spd * 10000 / div + 5) / 10);
+}
+
 void tim_fast_duty_set(enum tim_preset_ch ch, uint8_t duty)
 {
 	volatile struct tim_reg *tim = cfg_fast.tim;
@@ -27,7 +46,7 @@ void tim_fast_duty_set(enum tim_preset_ch ch, uint8_t duty)
 
 	// [0,255] → [0,period-1]
 	unsigned div = (255 * 10000 / (period-1) + 5) / 10;
-	unsigned nv = duty * 1000 / div;
+	unsigned nv = (duty * 10000 / div + 5) / 10;
 
 	switch (ch) {
 	case TIM_CH1: tim->ccr1 = nv; break;

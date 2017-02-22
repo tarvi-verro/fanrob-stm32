@@ -8,8 +8,15 @@
 
 void getclock();
 
+void (*cmd_handle_override)(char *cmd, int len) = NULL;
+
 void cmd_handle(char *cmd, int len)
 {
+	if (cmd_handle_override != NULL) {
+		cmd_handle_override(cmd, len);
+		return;
+	}
+
 	if (len < 1)
 		return;
 
@@ -25,6 +32,7 @@ void cmd_handle(char *cmd, int len)
 	case 'r':
 	case 'v':
 	case 'V':
+	case 'w':
 		fanctl_cmd(cmd, len);
 		break;
 	case 'o':
@@ -39,10 +47,10 @@ void cmd_handle(char *cmd, int len)
 				"\tcn: seconds since startup\r\n"
 				"\tf: set fan speed cycle\r\n"
 				"\tR: get RPM counter\r\n"
+				"\tw: watch RPM counter\r\n"
 				"\tr: set automatic rpm speed, show info\r\n"
 				"\tv: get small fan state\r\n"
 				"\tV: toggle small fan state\r\n"
-				//"\tp: set pump duty cycle\r\n"
 				"\ts: display some info about frequencies\r\n"
 				"\to: one-wire commands\r\n"
 				"\t?: display this\r\n");

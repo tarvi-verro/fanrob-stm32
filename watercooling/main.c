@@ -16,7 +16,6 @@
 #include "one-wire.h"
 
 #include "fanctl.h"
-//#include "pump.h"
 
 #include "clock.h"
 
@@ -70,13 +69,13 @@ int main(void)
 	setup_clock();
 
 	setup_fanctl();
-	//setup_pump();
 	setup_uart();
 	setup_onewire();
 	uart_puts("\r\n\nChip has been restarted!\r\n");
 	while (1) {
 		cnt++;
 		cmd_check();
+		fanctl_rpm_measure(cnt);
 		if (cnt % 0x10000 == 0x0)
 			; // fanctl_setspeed((cnt / 0x10000) % 256);
 		if (cnt % 0x80000 == 0x0) {
