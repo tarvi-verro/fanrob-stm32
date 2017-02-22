@@ -70,7 +70,7 @@ static int rpm_counter_previous[4] = { 0 };
 
 static uint8_t duties[] = { 62, 120, 169, 172, 175, 178, 182 };
 static int duties_selected[4]; // Initially closest to cfg_fan_ctl_initial_duty
-static int duties_target_rpm[4] = { 1335, 500, 500, 500 };
+static int duties_target_rpm[4] = { 1395, 500, 600, 600 };
 
 static enum {
 	STRATEGY_DUTIES,
@@ -114,7 +114,7 @@ void rpm_chkspeed_duties()
 			continue;
 		int rpm = 30*rpm_counter_delta[fan]/2;
 
-		if (rpm > duties_target_rpm[fan] - 15 && rpm < duties_target_rpm[fan] + 15)
+		if (rpm >= duties_target_rpm[fan] - 15 && rpm <= duties_target_rpm[fan] + 15)
 			continue; // On target
 
 		if (rpm < duties_target_rpm[fan]) {
