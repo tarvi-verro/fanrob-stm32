@@ -4,7 +4,7 @@
 #include "uart.h"
 #include "fanctl.h"
 #include "one-wire.h"
-//#include "pump.h"
+#include "dynamic.h"
 
 void getclock();
 
@@ -26,6 +26,9 @@ void cmd_handle(char *cmd, int len)
 		break;
 	case 's':
 		getclock(cmd, len);
+		break;
+	case 'd':
+		dyn_cmd(cmd, len);
 		break;
 	case 'f':
 	case 'R':
@@ -51,6 +54,7 @@ void cmd_handle(char *cmd, int len)
 				"\tr: set automatic rpm speed, show info\r\n"
 				"\ts: display some info about frequencies\r\n"
 				"\to: one-wire commands\r\n"
+				"\td[w|i|s[?]|?]: dynamic commands\r\n"
 				"\t?: display this\r\n");
 		break;
 	default:

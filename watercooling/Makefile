@@ -34,7 +34,7 @@ chkpath:
 SRC:=main.c ../l0/early.S ../early_reset.c ../clock.c ../decimal.c \
 	../assert.c ../adc.c ../rcc.c ../uart.c fanctl.c ../cmd.c \
 	cmd_handler.c ../font-tiny.xcf ../exti-abs.c ../one-wire.c \
-	../tim-preset.c
+	../tim-preset.c dynamic.c
 
 OBJ:= \
 	$(patsubst %.c, $O/%.o, $(filter %.c, $(SRC))) \

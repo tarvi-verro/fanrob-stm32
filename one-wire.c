@@ -7,6 +7,7 @@
 #include "rcc-abs.h"
 #include "uart.h"
 #include "decimal.h"
+#include <limits.h>
 
 static int ow_readbuf_length = 0;
 static char ow_readbuf[16] = { 0 };
@@ -108,7 +109,8 @@ static char ow_reset_and_presence_detect()
 }
 
 static void ow_cmd_tst();
-static uint8_t addr_sen[8] = { 0x22, 0x03, 0x16, 0x05, 0x5E, 0xED, 0xFF, 0x28 };
+static uint8_t addr_sen[8] = { 0x4A, 0x03, 0x16, 0x05, 0x89, 0x2C, 0xFF, 0x28 };
+//static uint8_t addr_sen[8] = { 0x22, 0x03, 0x16, 0x05, 0x5E, 0xED, 0xFF, 0x28 };
 
 int ow_reset_and_select_device(uint8_t *dev)
 {
@@ -134,7 +136,50 @@ int ow_reset_and_select_device(uint8_t *dev)
 	return 1;
 }
 
-void ow_print(uint16_t t)
+int ow_measure_temp(const uint8_t dev[8])
+{
+	if (!ow_reset_and_select_device(addr_sen))
+		return INT_MIN;
+
+	if (!ow_write_byte(0x44))
+		return INT_MIN;
+
+	for (int i = 0; i < 10000; i++) asm("nop");
+
+	if (!ow_reset_and_select_device(addr_sen))
+		return INT_MIN;
+	if (!ow_write_byte(0xbe))
+		return INT_MIN;
+
+	unsigned char buf[9];
+	for (int i = 0; i < 9; i++) {
+		buf[i] = ow_read_byte();
+		//uart_puts_hex(buf[i], 2);
+		//uart_putc(' ');
+	}
+
+	// Calculate CRC
+	int reg = 0;
+	for (int i = 0; i < 8; i++) {
+		reg = crc(reg, buf[i]);
+	}
+	if (reg != buf[8])
+		return INT_MIN;
+
+	//ow_print(* (uint16_t *) buf);
+
+	struct decomp {
+		uint16_t m4 : 1, m3 : 1, m2 : 1, m1 : 1, units : 12;
+	};
+	struct decomp d = *(struct decomp *) buf;
+	int nom = 8*d.m1 + 4*d.m2 + 2*d.m3 + 1*d.m4;
+	int denom = 16;
+	int frac = (nom*10000/denom + 5) /10; // 2344
+
+	return d.units * 1000 + frac;
+}
+
+static void ow_print(uint16_t t)
 {
 	struct decomp {
 		uint16_t m4 : 1, m3 : 1, m2 : 1, m1 : 1, units : 12;
@@ -215,6 +260,8 @@ static void ow_cmd_tst()
 	int suc = 1;
 	for (int a = 7; a >= 0; a--) {
 		for (int i = 0; i < 8 && suc; i++) {
+			for (int b=0; b < 2000; b++)
+				asm("nop");
 			int b = ow_read_bit() << 1;
 			b |= ow_read_bit();
 			if (b == 0b01) {
@@ -230,47 +277,57 @@ static void ow_cmd_tst()
 	if (!suc)
 		uart_puts("Some rubbish came along.\r\n");
 
-	uart_puts("Got device: ");
-	for (int a = 0; a < 8; a++) {
-		uart_puts_hex(addr[a], 2);
-		uart_putc(' ');
-	}
-
-	int reg = 0;
-	for (int i = 7; i >= 1; i--) {
-		reg = crc(reg, addr[i]);
-	}
-	uart_puts(" crc: ");
-	uart_puts_hex_0x(reg);
-	if (reg == addr[0])
-		uart_puts(" ✓");
-	else
-		uart_puts(" ✕");
-
-	uart_puts("\r\n");
-
-	uart_puts("Received bits: ");
-	for (int a = 7; a >= 0; a--) {
-		for (int i = 0; i < 8; i++) {
-			uart_putc('0' + !!(addr[a] & (1l << i)));
+	void printresult()
+	{
+		uart_puts("Got device: ");
+		for (int a = 0; a < 8; a++) {
+			uart_puts_hex(addr[a], 2);
+			uart_putc(' ');
 		}
+
+		int reg = 0;
+		for (int i = 7; i >= 1; i--) {
+			reg = crc(reg, addr[i]);
+		}
+		uart_puts(" crc: ");
+		uart_puts_hex_0x(reg);
+		if (reg == addr[0])
+			uart_puts(" ✓");
+		else
+			uart_puts(" ✕");
+
+		uart_puts("\r\n");
+
+		uart_puts("Received bits: ");
+		for (int a = 7; a >= 0; a--) {
+			for (int i = 0; i < 8; i++) {
+				uart_putc('0' + !!(addr[a] & (1l << i)));
+			}
+		}
+		uart_puts("\r\n");
 	}
-	uart_puts("\r\n");
+	printresult();
 
 	uart_puts("Attempting single device.");
 	ow_reset_and_presence_detect();
-	uart_puts("\r\n");
 
 	if (!ow_write_byte(0x33)) {
 		uart_puts("Couldn't initiate read rom.\r\n");
 		return;
 	}
 
-	uart_puts("Received bits: ");
-	for (int i = 63; i >= 0; i--) {
-		uart_putc('0' + ow_read_bit());
+	for (int i = 0; i < sizeof(addr); i++)
+		addr[i] = 0x0;
+
+	for (int a = 7; a >= 0; a--) {
+		for (int i = 0; i < 8; i++) {
+			int b = ow_read_bit();
+			addr[a] |= b * (1 << i);
+			//uart_putc('0' + b);
+		}
 	}
 	uart_puts("\r\n");
+	printresult();
 }
 
 void setup_onewire()

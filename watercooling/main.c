@@ -16,6 +16,7 @@
 #include "one-wire.h"
 
 #include "fanctl.h"
+#include "dynamic.h"
 
 #include "clock.h"
 
@@ -68,6 +69,7 @@ int main(void)
 	int cnt = 0;
 	setup_clock();
 
+	setup_dynamic();
 	setup_fanctl();
 	setup_uart();
 	setup_onewire();
@@ -76,6 +78,7 @@ int main(void)
 		cnt++;
 		cmd_check();
 		fanctl_rpm_measure(cnt);
+		dyn_mainloop();
 		if (cnt % 0x10000 == 0x0)
 			; // fanctl_setspeed((cnt / 0x10000) % 256);
 		if (cnt % 0x80000 == 0x0) {

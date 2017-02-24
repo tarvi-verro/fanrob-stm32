@@ -13,3 +13,7 @@ extern void clock_alarm(struct rtc_alrmar alrm, struct rtc_alrmassr ss,
 extern void clock_alarm_stop(void (*cb)());
 extern void clock_cmd(char *cmd, int len);
 
+/*
+ * seconds since startup
+ */
+extern unsigned clock_seconds;

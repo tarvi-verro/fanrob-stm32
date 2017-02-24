@@ -68,34 +68,25 @@ int rpm_counter[4] = { 0 };
 int rpm_counter_delta[4] = { 0 };
 static int rpm_counter_previous[4] = { 0 };
 
-static uint8_t duties[] = { 62, 120, 169, 172, 175, 178, 182 };
-static int duties_selected[4]; // Initially closest to cfg_fan_ctl_initial_duty
+static int duties_select[4]; // cfg_fan_ctl_initial_duty
 static int duties_target_rpm[4] = { 1395, 500, 600, 600 };
+static int duties_dynamic_target[4] = { 0 };
 
 static enum {
-	STRATEGY_DUTIES,
-	STRATEGY_FIXED,
+	STRATEGY_DUTIES, /* keep target speed */
+	STRATEGY_DYNAMIC, /* keep target speed, speeds set by dynamic.c */
+	STRATEGY_FIXED, /* give a constant duty for timer */
 } strategy[4] = {
-	[0] = STRATEGY_DUTIES,
+	[0] = STRATEGY_DYNAMIC,
 	[1] = STRATEGY_FIXED,
-	[2] = STRATEGY_DUTIES,
-	[3] = STRATEGY_DUTIES
+	[2] = STRATEGY_DYNAMIC,
+	[3] = STRATEGY_DYNAMIC,
 };
 
 void duties_select_default()
 {
 	for (int fan = 0; fan < 4; fan++) {
-		int delta = 255;
-		for (int i = 0; i < sizeof(duties); i++) {
-			int b = cfg_fan.fans[fan].ctl_initial_duty - duties[fan];
-			if (b < 0) b = -b;
-			if (b < delta) {
-				delta = b;
-				duties_selected[fan] = i;
-			} else {
-				break;
-			}
-		}
+		duties_select[fan] = cfg_fan.fans[fan].ctl_initial_duty;
 		tim_fast_duty_set(cfg_fan.fans[fan].ctl_fast_ch, cfg_fan.fans[fan].ctl_initial_duty);
 	}
 }
@@ -107,23 +98,43 @@ void setup_fanctl()
 	setup_fanctl_pins();
 }
 
+static inline int duties_target(int fan)
+{
+	assert(strategy[fan] == STRATEGY_DYNAMIC || strategy[fan] == STRATEGY_DUTIES);
+	return strategy[fan] == STRATEGY_DYNAMIC ? duties_dynamic_target[fan] : duties_target_rpm[fan];
+}
+
 void rpm_chkspeed_duties()
 {
 	for (int fan = 0; fan < 4; fan++) {
-		if (strategy[fan] != STRATEGY_DUTIES)
+		if (strategy[fan] != STRATEGY_DUTIES
+				&& strategy[fan] != STRATEGY_DYNAMIC)
 			continue;
 		int rpm = 30*rpm_counter_delta[fan]/2;
 
-		if (rpm >= duties_target_rpm[fan] - 15 && rpm <= duties_target_rpm[fan] + 15)
+		int target_delta = rpm - duties_target(fan);
+		if (target_delta < 0)
+			target_delta = -target_delta;
+
+		if (target_delta <= 15)
 			continue; // On target
 
-		if (rpm < duties_target_rpm[fan]) {
-			duties_selected[fan]--;
-			if (duties_selected[fan] < 0) duties_selected[fan] = 0;
-			tim_fast_duty_set(cfg_fan.fans[fan].ctl_fast_ch, duties[duties_selected[fan]]);
-		} else if (duties_selected[fan] < sizeof(duties) - 1) {
-			duties_selected[fan]++;
-			tim_fast_duty_set(cfg_fan.fans[fan].ctl_fast_ch, duties[duties_selected[fan]]);
+		int step = cfg_fan.step;
+		if (target_delta >= 100) {
+			int d = target_delta/100;
+			step *= d*d + 1;
+		}
+
+		if (rpm < duties_target(fan)) {
+			duties_select[fan] -= step;
+			if (duties_select[fan] < 0)
+				duties_select[fan] = 0;
+			tim_fast_duty_set(cfg_fan.fans[fan].ctl_fast_ch, duties_select[fan]);
+		} else {
+			duties_select[fan] += step;
+			if (duties_select[fan] > 255)
+				duties_select[fan] = 255;
+			tim_fast_duty_set(cfg_fan.fans[fan].ctl_fast_ch, duties_select[fan]);
 		}
 	}
 }
@@ -184,6 +195,24 @@ static void ic_power(enum pin p)
 	duties_select_default();
 }
 
+int fanctl_getspeed(int fan)
+{
+	assert(fan >= 0 && fan < 4);
+	return 30*rpm_counter_delta[fan]/2;
+}
+
+void fanctl_settarget_dyn(int fan, unsigned rpm)
+{
+	assert(fan >= 0 && fan < 4);
+	duties_dynamic_target[fan] = rpm;
+}
+
+unsigned fanctl_gettarget_dyn(int fan)
+{
+	assert(fan >= 0 && fan < 4);
+	return duties_dynamic_target[fan];
+}
+
 void fanctl_setspeed(int fan, uint8_t duty)
 {
 	assert(fan >= 0 && fan < 4);
@@ -223,19 +252,10 @@ static void print_dutiesinfo(int fan)
 	uart_puts("Duties (t'rpm: ");
 	uart_puts_unsigned(duties_target_rpm[fan]);
 	uart_puts("): ");
-	for (int i = 0; i < sizeof(duties); i++) {
-		if (i == duties_selected[fan])
-			uart_putc('*');
-		uart_puts_unsigned(duties[i]);
-		if (i != sizeof(duties) - 1)
-			uart_puts(", ");
-		else
-			uart_puts("\r\n");
-	}
-	/*
-	uart_puts("Min speed: ");
-	uart_puts("\r\n");
-	*/
+	uart_puts_unsigned(duties_select[fan]);
+	uart_puts(" (actual: ");
+	uart_puts_unsigned(tim_fast_duty_get(cfg_fan.fans[fan].ctl_fast_ch));
+	uart_puts(")\r\n");
 }
 
 static void print_watchinfo()
@@ -305,7 +325,7 @@ void fanctl_cmd(char *cmd, int len)
 			uart_putc(*cmd);
 			uart_puts("[1:4]");
 			if (*cmd == 'r')
-				uart_puts(" (target rpm)");
+				uart_puts(" (dyn|[target rpm])");
 			uart_puts("\r\n");
 			return;
 		}
@@ -316,14 +336,24 @@ void fanctl_cmd(char *cmd, int len)
 			uart_puts("Fanctl strategy set to duties.\r\n");
 			strategy[fan] = STRATEGY_DUTIES;
 			tim_fast_duty_set(cfg_fan.fans[fan].ctl_fast_ch,
-					duties[duties_selected[fan]]);
+					duties_select[fan]);
 		}
-		if (len > 2) {
+		if (len > 2 && cmd[3] >= '0' && cmd[3] <= '9') {
 			int ns = parseBase10(cmd + 3, len - 3);
 			duties_target_rpm[fan] = ns;
 			uart_puts("Target RPM set to ");
 			uart_puts_unsigned(ns);
 			uart_puts("\r\n");
+		} else if (len > 2) {
+			if (len != 6 || cmd[3] != 'd' || cmd[4] != 'y' || cmd[5] != 'n') {
+				uart_puts("Did you mean 'dyn'?\r\n");
+				return;
+			}
+			if (duties_dynamic_target[fan] == 0) {
+				uart_puts("There's not dynamic targeting for said fan.\r\n");
+				return;
+			}
+			strategy[fan] = STRATEGY_DYNAMIC;
 		}
 		print_dutiesinfo(fan);
 		break;

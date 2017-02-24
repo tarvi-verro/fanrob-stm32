@@ -24,6 +24,7 @@ static const struct uart_configuration cfg_uart = {
 #ifdef CFG_FANCTL
 static const struct fanctl_configuration cfg_fan = {
 	.pwr_in = PB7, /* D4, 12V line on/off */
+	.step = 2, /* the minmum duty step */
 
 	.fans = {
 		{ // fan1ctl
@@ -31,25 +32,25 @@ static const struct fanctl_configuration cfg_fan = {
 			.ctl = PA8, /* D9 */
 			.ctl_fast_ch = TIM_CH1,
 			.ctl_tim_af = 5,
-			.ctl_initial_duty = 170,
+			.ctl_initial_duty = 169,
 		}, { // fan2ctl
 			.rpm = PB5, /* D11 */
 			.ctl = PA1, /* A1 */
 			.ctl_fast_ch = TIM_CH2,
 			.ctl_tim_af = 2,
-			.ctl_initial_duty = 170,
+			.ctl_initial_duty = 169,
 		}, { // fan3ctl
 			.rpm = PA12, /* D2 */
 			.ctl = PB0, /* D3 */
 			.ctl_fast_ch = TIM_CH3,
 			.ctl_tim_af = 5,
-			.ctl_initial_duty = 170,
+			.ctl_initial_duty = 169,
 		}, { // fan4ctl
 			.rpm = PB4, /* D12 */
 			.ctl = PB1, /* D6 */
 			.ctl_fast_ch = TIM_CH4,
 			.ctl_tim_af = 5,
-			.ctl_initial_duty = 170,
+			.ctl_initial_duty = 169,
 		},
 	},
 };
@@ -111,4 +112,22 @@ static const struct onewire_configuration cfg_ow = {
 	.usart = usart2_macro,
 };
 #define ic_usart_ow i_usart2
+#endif
+
+#ifdef CFG_DYNAMIC
+static struct dynamic_configuration cfg_dyn = {
+	.temperature = { 0x4A, 0x03, 0x16, 0x05, 0x89, 0x2C, 0xFF, 0x28 },
+	.fan_mobo = 0,
+	.fan_water_top = 3,
+	.fan_water_bot = 2,
+
+	.water_rpm_max = 800,
+	.water_rpm_rest = 500,
+
+	.mobo_rpm_max = 1800,
+	.mobo_rpm_rest = 1300,
+
+	.temp_high = 41000,
+	.temp_low = 34000,
+};
 #endif

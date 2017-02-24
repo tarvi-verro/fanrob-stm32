@@ -236,7 +236,7 @@ void clock_get(struct rtc_dr *date, struct rtc_tr *time,
 		*subsec = rtc->ssr;
 }
 
-static unsigned seconds = 0;
+unsigned clock_seconds = 0;
 
 void clock_cmd(char *cmd, int len)
 {
@@ -263,11 +263,12 @@ void clock_cmd(char *cmd, int len)
 		uart_puts("Functionality coming reel suun.\r\n");
 	} else if (cmd[1] == 'n') {
 		uart_puts("Seconds since startup: ");
-		uart_puts_int(seconds);
+		uart_puts_unsigned(clock_seconds);
 		uart_puts("\r\n");
 	}
 }
 
+__attribute__ ((weak)) void dyn_1hz() {}
 __attribute__ ((weak)) void rpm_collect_1hz() {}
 __attribute__ ((weak)) void i_rtc_alrb() {}
 
@@ -279,8 +280,9 @@ void i_rtc_wut()
 #else
 	exti->pr.pif20 = 1;
 #endif
-	seconds++;
+	clock_seconds++;
 	rpm_collect_1hz();
+	dyn_1hz();
 }
 
 #ifdef CONF_L4
