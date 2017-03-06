@@ -122,7 +122,7 @@ static struct dynamic_configuration cfg_dyn = {
 	.fan_water_bot = 2,
 
 	.water_rpm_max = 800,
-	.water_rpm_rest = 500,
+	.water_rpm_rest = 615,
 
 	.mobo_rpm_max = 1800,
 	.mobo_rpm_rest = 1300,

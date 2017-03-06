@@ -1,5 +1,5 @@
 
-extern int decimal_length(unsigned int i);
+extern int decimal_length(unsigned i);
 
 extern void print_decimal(void (*putc)(char), unsigned int d, int len);
 

@@ -4,31 +4,39 @@
 
 extern void assert(bool);
 
-int decimal_length(int i)
+int decimal_length(unsigned i)
 {
-	assert(i >= 0 && i < 100*1000);
-
-	return 1 + (i >= 10) + (i >= 100) + (i >= 1000) + (i >= 10*1000);
+	if (i >= 1000000000)
+		return 10;
+	if (i >=  100000000)
+		return 9;
+	if (i >=   10000000)
+		return 8;
+	if (i >=    1000000)
+		return 7;
+	if (i >=     100000)
+		return 6;
+	if (i >=      10000)
+		return 5;
+	if (i >=       1000)
+		return 4;
+	if (i >=        100)
+		return 3;
+	if (i >=         10)
+		return 2;
+	return 1;
+	// uint32_t max 4294967296
 }
 
-static void prntdec5(void (*putc)(char), unsigned int d, int l)
+static void prntdec5(void (*putc)(char), unsigned d, int l)
 {
-	switch (l) {
-	default:
-	case 5:
-		putc('0' + (d / 10000) % 10);
-	case 4:
-		putc('0' + (d / 1000) % 10);
-	case 3:
-		putc('0' + (d / 100) % 10);
-	case 2:
-		putc('0' + (d / 10) % 10);
-	case 1:
-		putc('0' + (d % 10));
+	const unsigned exp10[] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+	for (int i = l; i >= 1; i--) {
+		putc('0' + (d / exp10[i-1]) % 10);
 	}
 }
 
-void print_decimal(void (*putc)(char), unsigned int d, int len)
+void print_decimal(void (*putc)(char), unsigned d, int len)
 {
 	assert(len < sizeof("4294967295") && len >= 1);
 	if (len > 5)
