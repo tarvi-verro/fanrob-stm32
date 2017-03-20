@@ -20,6 +20,7 @@ struct uart_configuration {
 	volatile struct lpuart_reg *lpuart;
 	volatile struct dma_reg *dma;
 	int dma_sel_lpuart_rx; // See dma->cselr.chX.cs
+	int dma_sel_lpuart_tx; // Or "Summary of the DMA requests for each channel"
 };
 static const struct uart_configuration cfg_uart;
 #endif
