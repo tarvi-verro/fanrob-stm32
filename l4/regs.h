@@ -42,5 +42,8 @@ static struct lpuart_reg *const lpuart1 = (struct lpuart_reg *) 0x40008000; // â
 #define tim6_macro (struct tim_reg *) 0x40001000
 #define tim2_macro (struct tim_reg *) 0x40000000
 #define tim1_macro (struct tim_reg *) 0x40012C00
-#define spi1_macro ((volatile struct spi_reg *const) 0x40013000)
+#define spi1_macro ((volatile struct spi_reg *) 0x40013000)
 #define dma1_macro ((volatile struct dma_reg *) 0x40020000)
+#define dma2_macro ((volatile struct dma_reg *) 0x40020000)
+#define lpuart1_macro ((volatile struct lpuart_reg *) 0x40008000)
+

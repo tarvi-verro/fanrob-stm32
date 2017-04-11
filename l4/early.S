@@ -49,16 +49,19 @@ NoNull:
 .weak Default_Handler
 .type Default_Handler, %function
 Default_Handler:
-Infinite_Loop:
 	movs	r0, #0
-	bl	assert
+	b	assert
+Infinite_Loop:
+	nop
 	b	Infinite_Loop
 .weak Hardfault_Handler
 .type Hardfault_Handler, %function
 Hardfault_Handler:
 	movs	r0, #0
-	bl	assert
-	b Hardfault_Handler
+	b	assert
+Infinite_Loop_Hf:
+	nop
+	b	Infinite_Loop_Hf
 .size Default_Handler, .-Default_Handler
 
 // see 91010 memory registers @ 169
@@ -170,7 +173,7 @@ vecs:
 	.word undef_interr	// 0x148, 66, LPTIM2
 	.word undef_interr	// 0x14C, 67, USB_FS
 
-	.word undef_interr	// 0x150, 68, DMA2_CH6			[2] |= 1 <<  4
+	.word i_dma2_ch6	// 0x150, 68, DMA2_CH6			[2] |= 1 <<  4
 	.word i_dma2_ch7	// 0x154, 69, DMA2_CH7
 	.word i_lpuart1		// 0x158, 70, LPUART1
 	.word undef_interr	// 0x15C, 71, QUADSPI
@@ -195,6 +198,9 @@ vecs:
 
 	.weak i_dma2_ch7
 	.thumb_set i_dma2_ch7,Default_Handler
+
+	.weak i_dma2_ch6
+	.thumb_set i_dma2_ch6,Default_Handler
 
 	.weak i_lpuart1
 	.thumb_set i_lpuart1,Default_Handler

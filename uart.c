@@ -17,8 +17,8 @@ void uart_puts_unsigned(unsigned z) {}
 void setup_uart() {}
 #else
 
-#ifndef ic_dma_receiver
-#error Configuration had to define ic_dma_receiver!
+#if !(defined(ic_dma_rx) && defined(ic_dma_tx)) && !defined(ic_dma_both)
+#error Configuration had to define ic_dma_rx & _tx or _both!
 #endif
 #ifndef dmarx_ch
 #error Configuration had to define dmarx_ch!
@@ -323,11 +323,10 @@ void setup_uart()
 	ccr.dir = DMA_DIR_FROM_MEM;
 	dma->dmatx_ch.ccr = ccr;
 #ifdef CONF_L4
-	if (dma == dma2 && (MAC2STR(dmarx_ch)[2] == '7'))
-		nvic_iser[2] |= 1 << 5;
+	if (dma == dma2 && (MAC2STR(dmarx_ch)[2] == '7') && (MAC2STR(dmatx_ch)[2] == '6'))
+		nvic_iser[2] |= (1 << 5) | (1 << 4);
 	else
 		assert(0);
-#error TODO: assert the dmatx_ch and set iser accordingly
 #elif defined(CONF_L0)
 	if (dma == dma1 && (MAC2STR(dmarx_ch))[2] == '3' && (MAC2STR(dmatx_ch))[2] == '2')
 		nvic_iser[0] |= 1 << 10;
@@ -397,24 +396,39 @@ static void tx_sendmore()
 	dma->dmatx_ch.ccr.en = 1;
 }
 
-void ic_dma_receiver()
-{
-	volatile struct dma_reg *dma = cfg_uart.dma;
-	if (dma->isr.dmarx_ch.tcif) {
-		dma->ifcr.dmarx_ch.ctcif = 1;
-		cmd_rotate();
-	}
-	if (dma->isr.dmatx_ch.tcif) {
-		tx_sendmore();
-		dma->ifcr.dmatx_ch.ctcif = 1;
-	}
-}
-
 int uart_readbuf_length()
 {
 	volatile struct dma_reg *dma = cfg_uart.dma;
 	return sizeof(uart_readbuf) - dma->dmarx_ch.cndtr.ndt;
 }
+
+void ic_dma_rx()
+{
+	volatile struct dma_reg *dma = cfg_uart.dma;
+	dma->ifcr.dmarx_ch.ctcif = 1;
+	cmd_rotate();
+}
+void ic_dma_tx()
+{
+	volatile struct dma_reg *dma = cfg_uart.dma;
+	tx_sendmore();
+	dma->ifcr.dmatx_ch.ctcif = 1;
+}
+#ifdef ic_dma_both
+#	if defined(ic_dma_rx) || defined(ic_dma_tx)
+#		error Pick one!
+#	endif
+void ic_dma_both()
+{
+	volatile struct dma_reg *dma = cfg_uart.dma;
+	if (dma->isr.dmarx_ch.tcif) {
+		ic_dma_rx();
+	}
+	if (dma->isr.dmatx_ch.tcif) {
+		ic_dma_tx();
+	}
+}
+#endif
 
 #ifdef CONF_L4
 void i_lpuart1()

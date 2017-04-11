@@ -24,7 +24,7 @@ void assert(int cnd)
 	while (1) {
 		z++;
 		a = z & 0xffff;
-		if (a != 0x0 && a != 0x8000)
+		if (a != 0x0)
 			continue;
 		gpio_flip(cfg_assert.led);
 	}

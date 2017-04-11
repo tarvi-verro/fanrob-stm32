@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum {
+enum spi_br {
 	SPI_BR_2,
 	SPI_BR_4,
 	SPI_BR_8,
@@ -13,12 +13,13 @@ enum {
 	SPI_BR_256,
 };
 struct spi_cr1 {
-	uint32_t cpha : 1, cpol : 1, mstr : 1, br : 3, spe : 1, lsbfirst : 1,
-		 ssi : 1, ssm : 1, rxonly : 1, crcl : 1, crcnext : 1,
-		 crcen : 1, bidioe : 1, bidimode : 1, : 16;
+	uint32_t cpha : 1, cpol : 1, mstr : 1;
+	enum spi_br br : 3;
+	uint32_t spe : 1, lsbfirst : 1, ssi : 1, ssm : 1, rxonly : 1, crcl : 1,
+		 crcnext : 1, crcen : 1, bidioe : 1, bidimode : 1, : 16;
 };
 
-enum {
+enum spi_ds {
 	SPI_DS_4 = 3,
 	SPI_DS_5,
 	SPI_DS_6,
@@ -36,8 +37,9 @@ enum {
 _Static_assert (SPI_DS_16 == 15, "SPI_DS_n have gone bad.");
 struct spi_cr2 {
 	uint32_t rxdmaen : 1, txdmaen : 1, ssoe : 1, nssp : 1, frf : 1,
-		 errie : 1, rxneie : 1, txeie : 1, ds : 4, frxth : 1,
-		 ldma_rx : 1, ldma_tx : 1, : 1, : 16;
+		 errie : 1, rxneie : 1, txeie : 1;
+	enum spi_ds ds : 4;
+	uint32_t frxth : 1, ldma_rx : 1, ldma_tx : 1, : 1, : 16;
 };
 
 struct spi_sr {

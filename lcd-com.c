@@ -40,6 +40,7 @@ void setup_lcd(void)
 #endif
 
 	/* Setting up pins. */
+
 	/* Data/command pin */
 	struct gpio_conf dc = {
 		.mode = GPIO_MODER_OUT,
@@ -68,9 +69,10 @@ void setup_lcd(void)
 		.ospeed = GPIO_OSPEEDR_HIGH,
 		.otype = GPIO_OTYPER_PP,
 		.pupd = GPIO_PUPDR_NONE,
+		.alt = cfg_lcd.gpio_af_spi,
 	};
 	gpio_configure(cfg_lcd.nss, &nss0);
-	gpio_write(cfg_lcd.nss, 1);
+	gpio_write(cfg_lcd.nss, 0);
 
 	struct gpio_conf spi_io = {
 		.mode = GPIO_MODER_AF,
@@ -88,56 +90,68 @@ void setup_lcd(void)
 		.otype = GPIO_OTYPER_PP,
 	};
 	gpio_configure(cfg_lcd.vdd, &vdd);
-	//gpio_write(cfg_lcd.vdd, 0); /* set to low */
+	gpio_write(cfg_lcd.vdd, 0); /* set to low */
 
 	/* Setting up SPI */
-	spi->cr1.cpha = 0; /* CPHA, second clock edge for data capture */
-	spi->cr1.cpol = 0; /* CPOL, clock polarity high when idle */
-	spi->cr1.mstr = 1; /* MSTR, master sel */
-	spi->cr1.br = SPI_BR_2; /* BR */
-	spi->cr1.lsbfirst = 0; /* LSBFIRST */
-	spi->cr1.ssi = 0; /* SSI */
-	spi->cr1.ssm = 0; /* SSM, software slave mngment */
-	spi->cr1.rxonly = 0; /* RXONLY */
-	//spi_->cr1.crcl = 0;
-	//spi_->cr1.crcnext = 0;
-	spi->cr1.crcen = 0; /* CRC-EN */
-	spi->cr1.bidioe = 1; /* BIDIOE, transmit only */
-	spi->cr1.bidimode = 0; /* BIDIMODE, bidirectional mode */
+	struct spi_cr1 cr1 = {
+		.cpha = 0, /* CPHA, second clock edge for data capture */
+		.cpol = 0, /* CPOL, clock polarity high when idle */
+		.mstr = 1, /* MSTR, master sel */
+		.br = SPI_BR_8, /* BR */
+		.lsbfirst = 0, /* LSBFIRST */
+		.ssi = 0, /* SSI */
+		.ssm = 0, /* SSM, software slave mngment */
+		.rxonly = 0, /* RXONLY */
+		//spi_->cr1.crcl = 0,
+		//spi_->cr1.crcnext = 0,
+		.crcen = 0, /* CRC-EN */
+		.bidioe = 1, /* BIDIOE, output enable in bidirectional mode */
+		.bidimode = 0, /* BIDIMODE, bidirectional mode */
+	};
+	spi->cr1 = cr1;
 
 
-	spi->cr2.rxdmaen = 0;
-	spi->cr2.txdmaen = 1;
-	spi->cr2.ssoe = 1; /* SSOE */
-	spi->cr2.nssp = 1; /* NSSP, NSS pulse between data */
-	spi->cr2.frf = 0; /* FRF, frame format motorola */
-	spi->cr2.errie = 1; /* ERRIE, error interrupt */
-	spi->cr2.rxneie = 0;
-	spi->cr2.txeie = 0;
-	spi->cr2.ds = SPI_DS_8;
-	spi->cr2.frxth = 0; /* FRXTH, fifo reception thresh. (fxne ev) */
+	struct spi_cr2 cr2 = {
+		.rxdmaen = 0,
+		.txdmaen = 0, // Enable it _after_ configuring DMA channel
+		.ssoe = 1, /* SSOE */
+		.nssp = 1, /* NSSP, NSS pulse between data */
+		.frf = 0, /* FRF, frame format motorola */
+		.errie = 1, /* ERRIE, error interrupt */
+		.rxneie = 0,
+		.txeie = 0,
+		.ds = SPI_DS_8,
+		.frxth = 0, /* FRXTH, fifo reception thresh. (fxne ev) */
+	};
+	spi->cr2 = cr2;
 
 	/* Setup DMA, */
-
 	volatile struct dma_reg *const dma = cfg_lcd.dma;
-#ifdef CONF_F0
+#if defined (CONF_F0)
 	rcc->ahbenr.dmaen = 1;
-#elif defined CONF_L4
+#elif defined (CONF_L4)
 	assert(dma == dma1);
 	rcc->ahb1enr.dma1en = 1;
 #endif
-	dma->ch_lcd.ccr.pl = 1; /* priority medium */
-	dma->ch_lcd.ccr.msize = DMA_MSIZE_8;
-	dma->ch_lcd.ccr.psize = DMA_PSIZE_8;
-	dma->ch_lcd.ccr.dir = DMA_DIR_FROM_MEM;
-	dma->ch_lcd.ccr.circ = 0; /* circular mode */
-	dma->ch_lcd.ccr.minc = 1; /* increment memory addr */
-	dma->ch_lcd.ccr.pinc = 0; /* periperal address does not change */
-	dma->ch_lcd.ccr.htie = 0; /* half-transfter interrupt */
-	dma->ch_lcd.ccr.tcie = 0; /* transfer complete interrupt */
-	dma->ch_lcd.ccr.teie = 0; /* transfer error interrupt */
-	dma->ch_lcd.cpar = &spi->dr;
-	//dma->ch_lcd.ma = (uint32_t) 0;
+	struct dma_ccr dccr = {
+		.pl = DMA_PL_MEDIUM, /* priority medium */
+		.msize = DMA_MSIZE_8,
+		.psize = DMA_PSIZE_8,
+		.dir = DMA_DIR_FROM_MEM,
+		.circ = 0, /* circular mode */
+		.minc = 1, /* increment memory addr */
+		.pinc = 0, /* periperal address does not change */
+		.htie = 0, /* half-transfter interrupt */
+		.tcie = 0, /* transfer complete interrupt */
+		.teie = 0, /* transfer error interrupt */
+	};
+	dma->ch_lcd.ccr = dccr;
+	dma->ch_lcd.cpar = (uint32_t) &spi->dr;
+	//dma->ch_lcd.cmar = (uint32_t) 0;
+	dma->cselr.ch_lcd.cs = 1; // request number 1
+
+	cr2.txdmaen = 1;
+	spi->cr2 = cr2;
 
 	/* Initialisation sequence */
 	int i;
@@ -150,7 +164,8 @@ void setup_lcd(void)
 	for (i = 0; i < 50 * 1000; i++);
 
 	gpio_configure(cfg_lcd.nss, &spi_io);
-	spi->cr1.spe = 1; /* SPI1_CR1, SPE, spi enable */
+	cr1.spe = 1;
+	spi->cr1 = cr1; /* SPI1_CR1, SPE, spi enable */
 	assert(!spi->sr.modf); /* MODF, mode fault */
 	lcd_initsequence();
 }
@@ -159,7 +174,7 @@ static void lcd_initsequence()
 {
 	uint8_t cmd[] = {
 		FNSET | H,
-#if 1
+#if 0
 		BSSET | 5, /* 0 -- 7 */
 		VOPSET | 0x34, /* 0 -- 0x7f */
 #else
@@ -182,13 +197,16 @@ void lcd_repeat(uint8_t x, int n)
 	/* Clear all of lcd with some magic */
 	gpio_write(cfg_lcd.dc, 1); /* data */
 	dma->ch_lcd.ccr.minc = 0; /* no memory increment */
-	dma->ch_lcd.cmar = &x; /* send this over and over again */
+	dma->ch_lcd.cmar = (uint32_t) &x; /* send this over and over again */
 	dma->ch_lcd.cndtr.ndt = n; /* this many times */
 
 	dma->ch_lcd.ccr.en = 1;
 	while (dma->ch_lcd.cndtr.ndt);
 	dma->ch_lcd.ccr.en = 0;
 	dma->ch_lcd.ccr.minc = 1; /* reset correct setting */
+
+	volatile struct spi_reg *const spi = cfg_lcd.spi;
+	while (spi->sr.bsy);
 }
 
 void lcd_clear()
@@ -218,11 +236,13 @@ void lcd_send(bool data_mode /* false:command mode */,
 			while (spi->sr.bsy);
 		}
 	} else {
-		dma->ch_lcd.cmar = (uint8_t *) a;
+		dma->ch_lcd.cmar = (uint32_t) a;
 		dma->ch_lcd.cndtr.ndt = l;
-		dma->ch_lcd.ccr.en = 1;
+
+		dma->ch_lcd.ccr32 |= 1;
 		while (dma->ch_lcd.cndtr.ndt);
-		dma->ch_lcd.ccr.en = 0;
+		dma->ch_lcd.ccr32 &= ~1;
+
 		dma->ifcr.ch_lcd.ctcif = 1;
 	}
 
@@ -236,14 +256,15 @@ static void lcd_bglight()
 	struct gpio_conf gcfg = {
 		.mode = GPIO_MODER_AF,
 		.ospeed = GPIO_OSPEEDR_MEDIUM,
-		.otype = GPIO_OTYPER_PP,
-		.pupd = GPIO_PUPDR_NONE,
+		.otype = GPIO_OTYPER_OD,
+		.pupd = GPIO_PUPDR_PULLDOWN,
 		.alt = cfg_lcd.gpio_af_bg,
 	};
 	gpio_configure(cfg_lcd.bg, &gcfg);
+	//gpio_write(cfg_lcd.bg, 0);
 
 	setup_tim_fast();
-	tim_fast_duty_set(cfg_lcd.bg_tim_fast_ch, 0);
+	tim_fast_duty_set(cfg_lcd.bg_tim_fast_ch, 250);
 }
 
 extern const uint8_t *glyph_5x8_lookup(const char c);
@@ -255,7 +276,7 @@ void lcd_putc(char c)
 
 void lcd_bgset(uint8_t b)
 {
-	tim_fast_duty_set(cfg_lcd.bg_tim_fast_ch, b);
+	tim_fast_duty_set(cfg_lcd.bg_tim_fast_ch, 255-b);
 }
 
 void lcd_setcaret(int x, int y)

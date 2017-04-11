@@ -18,10 +18,11 @@ static const struct assert_configuration cfg_assert = {
 
 #ifdef CFG_KBD
 static const struct kbd_configuration cfg_kbd = {
-	.left = PA11,
-	.down = PA8,
-	.up = PB1,
-	.right = PA7,
+	.up = PA11,
+	.left = PA8,
+	.right = PB1,
+	.down = PA7,
+	.press = PB3,
 };
 #endif
 
@@ -53,9 +54,18 @@ static const struct uart_configuration cfg_uart = {
 	.tx = PA2,
 	.rx = PA3,
 	.alt = 8,
+	.lpuart = lpuart1_macro,
+	.dma = dma2_macro,
+	.dma_sel_lpuart_rx = 4,
+	.dma_sel_lpuart_tx = 4,
+
 };
 /* Configure uart.c */
-#define ic_dma_receiver i_dma2_ch7
+#define ic_dma_rx i_dma2_ch7
+#define ic_dma_tx i_dma2_ch6
+#define dmarx_ch ch7
+#define dmatx_ch ch6
+#define TXBUF_SIZE 300
 #endif
 
 
@@ -86,7 +96,7 @@ static const struct tim_fast_configuration cfg_fast = {
 		.out.ocpe = 1, /* preload enable */
 	},
 	.cc3e = 1,
-	.frequency = 200, // Hz
+	.frequency = 20000, // Hz
 };
 #endif
 

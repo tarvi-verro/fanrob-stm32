@@ -17,7 +17,7 @@ static const struct uart_configuration cfg_uart = {
 	.dma_sel_lpuart_tx = 5, // LPUART1_TX
 };
 /* Configure uart.c */
-#define ic_dma_receiver i_dma1_ch2_3
+#define ic_dma_both i_dma1_ch2_3
 #define dmarx_ch ch3
 #define dmatx_ch ch2
 #define TXBUF_SIZE 300

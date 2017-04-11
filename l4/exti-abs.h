@@ -31,8 +31,8 @@ extern void exti_configure_pin(enum pin p, struct exti_conf *cfg, void (*const *
 static inline void exti_pending_clear(enum line l)
 {
 	if (l == LNONE) return;
-	uint32_t *pr = (uint32_t *) (l / 32 ? &exti->pr2 : &exti->pr1);
-	uint32_t b = 1 << l;
+	uint32_t *pr = (l / 32 ? (uint32_t *) &exti->pr2 : (uint32_t *) &exti->pr1);
+	uint32_t b = 1 << (l % 32);
 	*pr |= b;
 }
 

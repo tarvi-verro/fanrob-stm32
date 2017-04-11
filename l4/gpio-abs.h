@@ -51,48 +51,48 @@ static inline void gpio_configure(enum pin p, struct gpio_conf *cfg)
 	}
 	volatile struct gpio_reg *r = gpio_pin_reg(p);
 	int z = p % 16;
-	*(uint32_t *) &r->moder &= ~(0x3 << 2*z);
-	*(uint32_t *) &r->moder |= cfg->mode << (2*z);
+	r->moder32 &= ~(0x3 << 2*z);
+	r->moder32 |= cfg->mode << (2*z);
 
-	*(uint32_t *) &r->otyper &= ~(0x1 << z);
-	*(uint32_t *) &r->otyper |= cfg->otype << z;
+	r->otyper32 &= ~(0x1 << z);
+	r->otyper32 |= cfg->otype << z;
 
-	*(uint32_t *) &r->ospeedr &= ~(0x3 << 2*z);
-	*(uint32_t *) &r->ospeedr |= cfg->ospeed << (2*z);
+	r->ospeedr32 &= ~(0x3 << 2*z);
+	r->ospeedr32 |= cfg->ospeed << (2*z);
 
-	*(uint32_t *) &r->pupdr &= ~(0x3 << 2*z);
-	*(uint32_t *) &r->pupdr |= cfg->pupd << (2*z);
+	r->pupdr32 &= ~(0x3 << 2*z);
+	r->pupdr32 |= cfg->pupd << (2*z);
 
 	if (cfg->mode != GPIO_MODER_AF)
 		return;
 
 	int zl = z % 8;
 
-	((uint32_t *) &r->afr)[z/8] &= ~(0xf << 4*zl);
-	((uint32_t *) &r->afr)[z/8] |= ~(cfg->alt << 4*zl);
+	r->afr32[z/8] &= ~(0xf << 4*zl);
+	r->afr32[z/8] |= cfg->alt << 4*zl;
 }
 
 static inline int gpio_read(enum pin p)
 {
 	assert(p != PNONE);
-	volatile struct gpio_idr *id = &gpio_pin_reg(p)->idr;
+	uint32_t id = gpio_pin_reg(p)->idr32;
 	int z = p % 16;
-	return !!(z & (*(uint32_t *) id));
+	return !!((1 << z) & id);
 }
 
 static inline void gpio_write(enum pin p, int value)
 {
 	if (p == PNONE) return;
-	volatile struct gpio_bsrr *bsr = &gpio_pin_reg(p)->bsrr;
+	volatile uint32_t *bsr = &gpio_pin_reg(p)->bsrr32;
 	int z = p % 16;
-	*(uint32_t *) bsr = 1 << (z + 16*(!value));
+	*bsr = 1 << (z + 16*(!value));
 }
 
 static inline void gpio_flip(enum pin p)
 {
 	if (p == PNONE) return;
-	volatile struct gpio_odr *od = &gpio_pin_reg(p)->odr;
+	volatile uint32_t *od = &gpio_pin_reg(p)->odr32;
 	int z = p % 16;
-	*(uint32_t *) od ^= 1 << z;
+	*od ^= 1 << z;
 }
 

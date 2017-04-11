@@ -36,23 +36,30 @@ union dma_ifcr {
 		:  4; } ch7;
 };
 
-enum {
+enum dma_psize {
 	DMA_PSIZE_8, DMA_PSIZE_16, DMA_PSIZE_32,
+};
+enum dma_msize {
 	DMA_MSIZE_8 = 0, DMA_MSIZE_16, DMA_MSIZE_32,
 };
-enum {
+enum dma_dir {
 	DMA_DIR_FROM_PERIP, DMA_DIR_FROM_MEM,
 };
-enum {
+enum dma_pl {
 	DMA_PL_LOW,
 	DMA_PL_MEDIUM,
 	DMA_PL_HIGH,
 	DMA_PL_VERY_HIGH,
 };
 struct dma_ccr {
-	uint32_t en : 1, tcie : 1, htie : 1, teie : 1, dir : 1, circ : 1,
-		 pinc : 1, minc : 1, psize : 2, msize : 2, pl : 2,
-		 mem2mem : 1, : 17;
+	uint32_t en : 1, tcie : 1, htie : 1, teie : 1;
+	enum dma_dir dir : 1;
+	uint32_t circ : 1, pinc : 1, minc : 1;
+	enum dma_psize psize : 2;
+	enum dma_msize msize : 2;
+	enum dma_pl pl : 2;
+	uint32_t mem2mem : 1, : 1;
+	uint32_t : 16;
 };
 
 struct dma_cndtr {
@@ -72,10 +79,10 @@ _Static_assert(sizeof(union dma_cselr) == 0x4,
 		"DMA cselr register size wrong.");
 
 struct dma_ch {
-	struct dma_ccr ccr;
+	union { struct dma_ccr ccr; uint32_t ccr32; };
 	struct dma_cndtr cndtr; /* dma_cndtr */
-	volatile void *cpar;
-	volatile void *cmar;
+	uint32_t cpar;
+	uint32_t cmar;
 	uint32_t _res2;
 };
 _Static_assert (sizeof(void *) == 0x4, "Wrong size for pointers!");

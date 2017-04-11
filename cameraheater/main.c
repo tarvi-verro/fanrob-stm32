@@ -80,9 +80,10 @@ extern void cmd_check(); /* cmd.c */
 
 int main(void)
 {
-	setup_leds();
+	//setup_leds();
 	setup_assert();
-	setup_usrbtn();
+	setup_heater();
+	//setup_usrbtn();
 #ifdef clock
 	setup_clock();
 #endif
@@ -92,7 +93,6 @@ int main(void)
 #endif
 	setup_kbd();
 	setup_camsig();
-	setup_heater();
 	setup_adc();
 
 	unsigned int z = 1;
@@ -104,8 +104,12 @@ int main(void)
 			continue;
 		a = z & 0xffff;
 		kbd_tick_slow();
+		if ((a & 0xfff) == 0x0)
+			gpio_write(cfg_assert.led, !(((a & 0xf000) >> 12) & 7));
+
 		if (a != 0x0 && a != 0x8000)
 			continue;
+
 		if (somec) {
 			somec--;
 			if (!somec) {
@@ -115,9 +119,6 @@ int main(void)
 
 		if (app_update != NULL)
 			app_update();
-
-		if (gpio_read(cfg_assert.led))
-			gpio_flip(cfg_main.blue);
 	}
 }
 

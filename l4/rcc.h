@@ -2,6 +2,29 @@
 #include <stdint.h>
 #include <stddef.h>
 
+enum rcc_msirange {
+	MSIRANGE0_100_kHz,
+	MSIRANGE1_200_kHz,
+	MSIRANGE2_400_kHz,
+	MSIRANGE3_800_kHz,
+	MSIRANGE4_1_MHz,
+	MSIRANGE5_2_MHz,
+	MSIRANGE6_4_MHz,
+	MSIRANGE7_8_MHz,
+	MSIRANGE8_16_MHz,
+	MSIRANGE9_24_MHz,
+	MSIRANGE10_32_MHz,
+	MSIRANGE11_48_MHz,
+};
+
+struct rcc_cr {
+	uint32_t msion : 1, msirdy : 1, msipllen : 1, msirgsel : 1;
+	enum rcc_msirange msirange : 4;
+	uint32_t hsion : 1, hsikeron : 1, hsirdy : 1, hsiasfs : 1, : 4,
+		 hseon : 1, hserdy : 1, hsebyp : 1, csson : 1, : 4, pllon : 1,
+		 pllrdy : 1,  pllsai1on : 1, pllsai1rdy : 1, : 4;
+};
+
 enum {
 	RCC_PPRE_NONE,
 	RCC_PPRE_2 = 4,
@@ -11,8 +34,16 @@ enum {
 };
 _Static_assert (RCC_PPRE_16 == 7, "RCC_PPRE broken.");
 
+enum rcc_sw {
+	SW_MSI,
+	SW_HSI16,
+	SW_HSE,
+	SW_PLL,
+};
+
 struct rcc_cfgr {
-	uint32_t sw : 2, sws : 2, hpre : 4, ppre1 : 3, ppre2 : 3, : 1,
+	enum rcc_sw sw : 2;
+	uint32_t sws : 2, hpre : 4, ppre1 : 3, ppre2 : 3, : 1,
 		 stopwuck : 1, : 8, mcosel : 4, mcopre : 3, : 1;
 };
 
@@ -80,7 +111,7 @@ struct rcc_ccipr {
 };
 
 struct rcc_reg {
-	uint32_t cr;			// 0x00
+	struct rcc_cr cr;		// 0x00
 	uint32_t icscr;			// 0x04
 	struct rcc_cfgr cfgr;		// 0x08
 	uint32_t pllcfgr;		// 0x0C

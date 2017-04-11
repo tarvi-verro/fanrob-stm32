@@ -82,7 +82,11 @@ void setup_tim_slow()
 
 	/* Setup tim */
 	tim->arr = 2550; /* auto-reload aka period */
+#ifdef CONF_L0
 	tim->psc = 32000 - 1; /* prescaler */
+#elif defined (CONF_L4)
+	tim->psc = 16000 - 1; /* prescaler */
+#endif
 	if (cfg_slow.cc1e)
 		tim->ccmr.ch1 = cfg_slow.ch1;
 	if (cfg_slow.cc2e)

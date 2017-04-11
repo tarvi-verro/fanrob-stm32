@@ -5,10 +5,11 @@ CC:=arm-none-eabi-gcc
 AS:=arm-none-eabi-as
 AR:=arm-none-eabi-ar
 LD:=arm-none-eabi-ld
+OC:=arm-none-eabi-objcopy
 
 # Where libgcc.a and the libnosys.a are, often times the version has to be
 # bumped.
-PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/6.3.0/armv6-m
+PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/6.3.1/armv6-m
 
 # Location of libc.a and libm.a.
 PATH_LIBNEW?=/usr/arm-none-eabi/lib/armv6-m
@@ -21,8 +22,9 @@ ifndef PRINT_PRETTY
 PRINT_PRETTY:=1
 endif
 
-f0: $O/prg-f0
 l4: $O/prg-l4
+l4-bin: $O/prg-l4.bin
+f0: $O/prg-f0
 
 chkpath:
 	@[ -d $(PATH_LIBGCC) ]
@@ -42,9 +44,9 @@ OBJ:= \
 # OTGT returns 'l4', 'f0', 'l0' from target name $@
 #OTGT=$(lastword $(patsubst -, ,$(@:.o=)))
 
-CFLAGS= -g3 -O0  -Wall -I.. -I.
+CFLAGS= -g3 -O0  -Wall -I.. -I.  -fstrict-aliasing -fstrict-volatile-bitfields
 
-ASFLAGS:= -g3 -mthumb -mcpu=cortex-m0 -EL
+ASFLAGS:= -g3
 
 LDFLAGS:=$(LDFLAGS) \
 	-L$(PATH_LIBGCC) \
@@ -64,7 +66,8 @@ $O/.aux: | $O
 
 
 clean::
-	rm -rf $(OBJ) $O/prg
+	find $O/.. -name '*.[do]' -exec rm '{}' \;
+	find $O/.. -name 'prg-*' -exec rm '{}' \;
 
 .PHONY: clean all chkpath f0 l4
 
