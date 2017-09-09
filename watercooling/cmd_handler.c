@@ -45,7 +45,7 @@ void cmd_handle(char *cmd, int len)
 		pump_cmd(cmd, len);
 		break;*/
 	case '?':
-		uart_puts("List of commands:\r\n"
+		uart_puts("Version 1.0. List of commands:\r\n"
 				"\tc*: clock (get,set)\r\n"
 				"\tcn: seconds since startup\r\n"
 				"\tf: set fan speed cycle\r\n"

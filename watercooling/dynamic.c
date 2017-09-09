@@ -36,7 +36,7 @@ void dyn_mainloop()
 	int temp = ow_measure_temp(cfg_dyn.temperature);
 
 	if (print_thing) {
-		uart_puts("Tm°: ");
+		uart_puts("T (°mC): ");
 		uart_puts_unsigned(temp);
 
 		uart_puts(",\tM: ");
@@ -61,22 +61,19 @@ void dyn_mainloop()
 		fanctl_settarget_dyn(cfg_dyn.fan_water_top, cfg_dyn.water_rpm_rest);
 		fanctl_settarget_dyn(cfg_dyn.fan_water_bot, cfg_dyn.water_rpm_rest);
 	} else if (cfg_dyn.temp_high > temp) {
+		// Mobo fan
 		int temp_d = cfg_dyn.temp_high - cfg_dyn.temp_low;
 		int mobo_rpm_d = cfg_dyn.mobo_rpm_max - cfg_dyn.mobo_rpm_rest;
 		int m_nxt = (temp - cfg_dyn.temp_low) * 1000 / temp_d * mobo_rpm_d / 1000;
 		fanctl_settarget_dyn(cfg_dyn.fan_mobo, m_nxt + cfg_dyn.mobo_rpm_rest);
-		if ((cfg_dyn.temp_low + cfg_dyn.temp_high) <= temp*2) {
-			temp_d /= 2;
-			int water_rpm_d = cfg_dyn.water_rpm_max - cfg_dyn.water_rpm_rest;
-			int w_nxt = (temp - cfg_dyn.temp_low - temp_d) * 1000 / temp_d * water_rpm_d / 1000;
-			fanctl_settarget_dyn(cfg_dyn.fan_water_top,
-					w_nxt + cfg_dyn.water_rpm_rest);
-			fanctl_settarget_dyn(cfg_dyn.fan_water_bot,
-					w_nxt + cfg_dyn.water_rpm_rest);
-		} else {
-			fanctl_settarget_dyn(cfg_dyn.fan_water_top, cfg_dyn.water_rpm_rest);
-			fanctl_settarget_dyn(cfg_dyn.fan_water_bot, cfg_dyn.water_rpm_rest);
-		}
+
+		// Water cooling fan
+		int water_rpm_d = cfg_dyn.water_rpm_max - cfg_dyn.water_rpm_rest;
+		int w_nxt = (temp - cfg_dyn.temp_low) * 1000 / temp_d * water_rpm_d / 1000;
+		fanctl_settarget_dyn(cfg_dyn.fan_water_top,
+				w_nxt + cfg_dyn.water_rpm_rest);
+		fanctl_settarget_dyn(cfg_dyn.fan_water_bot,
+				w_nxt + cfg_dyn.water_rpm_rest);
 	} else {
 		fanctl_settarget_dyn(cfg_dyn.fan_mobo, cfg_dyn.mobo_rpm_max);
 		fanctl_settarget_dyn(cfg_dyn.fan_water_top, cfg_dyn.water_rpm_max);

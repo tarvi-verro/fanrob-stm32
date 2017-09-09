@@ -9,7 +9,7 @@ OC:=arm-none-eabi-objcopy
 
 # Where libgcc.a and the libnosys.a are, often times the version has to be
 # bumped.
-PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/6.3.0/armv6-m
+PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/7.1.0/armv6-m
 
 # Location of libc.a and libm.a.
 PATH_LIBNEW?=/usr/arm-none-eabi/lib/armv6-m

@@ -12,7 +12,7 @@
 
 extern char uart_readbuf[14]; /* uart.c */
 
-static char cmd[15];
+static char cmd[32];
 static int cmd_len = 0;
 
 static int parsedTo = 0;

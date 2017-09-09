@@ -124,13 +124,13 @@ static struct dynamic_configuration cfg_dyn = {
 	.fan_water_top = 3,
 	.fan_water_bot = 2,
 
-	.water_rpm_max = 800,
-	.water_rpm_rest = 615,
+	.water_rpm_rest = 585,
+	.water_rpm_max = 900,
 
+	.mobo_rpm_rest = 900,
 	.mobo_rpm_max = 1800,
-	.mobo_rpm_rest = 1300,
 
-	.temp_high = 41000,
-	.temp_low = 34000,
+	.temp_high = 37000,
+	.temp_low = 28000,
 };
 #endif
