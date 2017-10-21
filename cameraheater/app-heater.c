@@ -7,7 +7,14 @@
 
 extern void assert(bool);
 
-static int heat_voltage = 74;
+static int heat_resistance = 168; // deci-Ω
+static const int heat_resistance_selection[] = { 168, 35  }; // deci-Ω
+static const int heat_resistance_selection_length = sizeof(heat_resistance_selection)/sizeof(heat_resistance_selection[0]);
+
+static int heat_voltage = 124; // deci-V
+static const int heat_voltage_selection[] = { 74, 124, 124*2 }; // deci-V
+static const int heat_voltage_selection_length = sizeof(heat_voltage_selection)/sizeof(heat_voltage_selection[0]);
+
 static int heat_watt = 10;
 static bool heat_online = false;
 
@@ -16,10 +23,11 @@ static void refocus(int oldfocus);
 enum conf_id {
 	CONF_TITLE,
 	CONF_VOLTAGE,
+	CONF_RESISTANCE,
 	CONF_WATT,
 	CONF_STATE,
-	CONF_USED,
 	CONF_BACK,
+
 	CONF_MAX,
 };
 _Static_assert(CONF_MAX <= LCD_HEIGHT/8,
@@ -38,13 +46,17 @@ static void upd_conf(enum conf_id cnf)
 		lcd_putc(' ');
 		print_decimal_fixpt(lcd_putc, heat_voltage, xn, 1, 10);
 		break;
+	case CONF_RESISTANCE:
+		xn = decimal_length(heat_resistance);
+		lcd_setcaret(LCD_WIDTH - 3 - ((xn + 2) * 5), CONF_RESISTANCE);
+		lcd_putc(' ');
+		print_decimal_fixpt(lcd_putc, heat_resistance, xn, 1, 10);
+		break;
 	case CONF_WATT:
 		xn = decimal_length(heat_watt);
 		lcd_setcaret(LCD_WIDTH - 3 - ((xn + 2) * 5), CONF_WATT);
 		lcd_putc(' ');
 		print_decimal_fixpt(lcd_putc, heat_watt, xn, 1, 10);
-		break;
-	case CONF_USED:
 		break;
 	case CONF_STATE:
 		if (heat_online) {
@@ -71,6 +83,10 @@ static void app_select()
 	lcd_setcaret(2, CONF_VOLTAGE);
 	lcd_puts("voltage");
 	upd_conf(CONF_VOLTAGE);
+
+	lcd_setcaret(2, CONF_RESISTANCE);
+	lcd_puts("resistance");
+	upd_conf(CONF_RESISTANCE);
 
 	lcd_setcaret(2, CONF_WATT);
 	lcd_puts("wattage");
@@ -111,13 +127,13 @@ static bool heat_upd()
 		heater_set(0);
 		return true;
 	}
-	/* all integers here are fixed point with 2 numbers: x.xx */
-	int w_actual = heat_voltage * heat_voltage * 10 / 35;
-	int w_target = heat_watt * 10;
-	if (w_target > w_actual)
+
+	int w_full_cycle_centi = heat_voltage * heat_voltage * 10 / heat_resistance;
+	int w_target_centi = heat_watt * 10;
+	if (w_target_centi > w_full_cycle_centi)
 		return false;
-	int w_freq = w_target * 100 / w_actual;
-	heater_set((uint8_t) (((float) w_freq) / 100.f * 255.f));
+	int freq = w_target_centi * 100 / w_full_cycle_centi;
+	heater_set((uint8_t) (((float) freq) / 100.f * 255.f));
 	return true;
 }
 
@@ -147,15 +163,39 @@ static void app_event(enum ev_type typ, enum ev_key key)
 
 
 	int val;
+	int i;
 	switch (focus) {
+	case CONF_RESISTANCE:
+		for (i = 0; i < heat_resistance_selection_length; i++)
+			if (heat_resistance_selection[i] == heat_resistance) break;
+		val = key == EV_KEY_LEFT ? i-1 : i+1;
+		if (val >= 0)
+			val = val % heat_resistance_selection_length;
+		else
+			val = heat_resistance_selection_length - 1;
+		heat_resistance = heat_resistance_selection[val];
+		upd_conf(CONF_RESISTANCE);
+		break;
 	case CONF_VOLTAGE:
-		val = key == EV_KEY_LEFT ? -1 : 1;
-		heat_voltage += val;
+		for (i = 0; i < heat_voltage_selection_length; i++)
+			if (heat_voltage_selection[i] == heat_voltage) break;
+		val = key == EV_KEY_LEFT ? i-1 : i+1;
+		if (val >= 0)
+			val = val % heat_voltage_selection_length;
+		else
+			val = heat_voltage_selection_length - 1;
+		heat_voltage = heat_voltage_selection[val];
 		upd_conf(CONF_VOLTAGE);
 		break;
 	case CONF_WATT:
 		val = key == EV_KEY_LEFT ? -1 : 1;
 		heat_watt += val;
+
+		int w_full_cycle_centi = heat_voltage * heat_voltage * 10 / heat_resistance;
+		if (heat_watt * 10 > w_full_cycle_centi)
+			heat_watt = 1;
+		else if (heat_watt < 1)
+			heat_watt = w_full_cycle_centi/10;
 		upd_conf(CONF_WATT);
 		break;
 	case CONF_STATE:
