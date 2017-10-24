@@ -57,13 +57,22 @@ int get_vdda()
 
 	while (!adc->isr.adrdy);
 
-	adc->chselr.chsel17 = 1;
+#ifdef CONF_F0
+	adc->chselr.chsel17 = 1; // vref
+#elif defined (CONF_L4)
+	adc->ccr.vrefen = 1;
+#endif
 	adc->cr.adstart = 1;
 
 	while (!adc->isr.eoc);
 	int data = adc->dr.data;
 
-	adc->chselr.chsel17 = 0;
+#ifdef CONF_F0
+	adc->chselr.chsel17 = 0; // vref
+#elif defined (CONF_L4)
+	adc->ccr.vrefen = 0;
+#endif
+
 	adc->ccr.vrefen = 0;
 	adc->cr.addis = 1;
 	while (adc->cr.aden);
