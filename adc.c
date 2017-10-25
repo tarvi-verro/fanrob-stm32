@@ -44,6 +44,13 @@ int get_vdda()
 	if (adc->cr.aden == 1)
 		return 0;
 
+#ifdef CONF_L4
+	adc->cr.deeppwd = 0;
+	adc->cr.advregen = 1;
+	// Wait for t_adcvreg_stup time (20μs)
+	sleep_busy(20*1000);
+#endif
+
 	// Calibrate ADC
 	adc->cr.adcal = 1;
 	while (adc->cr.adcal);
@@ -53,24 +60,30 @@ int get_vdda()
 	assert(!adc->cr.adstart);
 	adc->ccr.vrefen = 1;
 
+#ifdef CONF_F0
 	adc->smpr.smp = 0x7;
+#else
+	adc->smpr1.smp0 = 0x7;
+#endif
 
 	while (!adc->isr.adrdy);
 
 #ifdef CONF_F0
 	adc->chselr.chsel17 = 1; // vref
 #elif defined (CONF_L4)
-	adc->ccr.vrefen = 1;
+	adc->sqr1.l = ADC_LENGTH_1;
+	adc->sqr1.sq1 = 0;
 #endif
+	adc->ccr.vrefen = 1;
+
 	adc->cr.adstart = 1;
 
+	while (adc->cr.adstart);
 	while (!adc->isr.eoc);
 	int data = adc->dr.data;
 
 #ifdef CONF_F0
 	adc->chselr.chsel17 = 0; // vref
-#elif defined (CONF_L4)
-	adc->ccr.vrefen = 0;
 #endif
 
 	adc->ccr.vrefen = 0;
@@ -89,6 +102,13 @@ int get_temp()
 	// ADC_IN17 -- vrefint
 	if (adc->cr.aden == 1)
 		return 0;
+
+#ifdef CONF_L4
+	adc->cr.deeppwd = 0;
+	adc->cr.advregen = 1;
+	// Wait for t_adcvreg_stup time (20μs)
+	sleep_busy(20*1000);
+#endif
 
 	// Calibrate ADC
 	adc->cr.adcal = 1;
@@ -119,6 +139,10 @@ int get_temp()
 #ifdef CONF_F0
 	adc->chselr.chsel16 = 1; // temp
 	adc->chselr.chsel17 = 1; // vref
+#elif defined (CONF_L4)
+	adc->sqr1.l = ADC_LENGTH_2;
+	adc->sqr1.sq1 = 17; // temp sensor
+	adc->sqr1.sq2 = 0;
 #endif
 
 	assert(!adc->cr.addis);
@@ -129,6 +153,7 @@ int get_temp()
 	int data = adc->dr.data;
 
 	assert(!adc->cr.adstart);
+
 	adc->cr.adstart = 1;
 	while (adc->cr.adstart);
 	while (!adc->isr.eoc);
@@ -144,13 +169,12 @@ int get_temp()
 	const int t30_cal = *(uint16_t *) 0x1fff75a8;
 	const int t130_cal = *(uint16_t *) 0x1fff75ca;
 
-	const int vdd_calib = 3000;
-
-	int vdd_appli = vdda_from_raw(data2);
-	int t = data * vdd_appli / vdd_calib - t30_cal; // TS_DATA - TS_CAL1
-	t = t * (130 - 30);
+	int t = data - t30_cal; // TS_DATA - TS_CAL1
+	t = t * (1300 - 300);
 	t = t / (t130_cal - t30_cal);
-	t = t + 30;
+	t = t + 300;
+
+	t = (t + 5)/10;
 #else
 	// Calibrated at VDDA=3.3V
 	const int t30_cal = *(uint16_t *) 0x1ffff7b8;

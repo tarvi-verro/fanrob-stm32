@@ -30,6 +30,44 @@ struct adc_smpr2 {
 		 smp15 : 3, smp16 : 3, smp17 : 3, smp18 : 3, : 5;
 };
 
+enum {
+	ADC_LENGTH_1,
+	ADC_LENGTH_2,
+	ADC_LENGTH_3,
+	ADC_LENGTH_4,
+	ADC_LENGTH_5,
+	ADC_LENGTH_6,
+	ADC_LENGTH_7,
+	ADC_LENGTH_8,
+	ADC_LENGTH_9,
+	ADC_LENGTH_10,
+	ADC_LENGTH_11,
+	ADC_LENGTH_12,
+	ADC_LENGTH_13,
+	ADC_LENGTH_14,
+	ADC_LENGTH_15,
+	ADC_LENGTH_16,
+};
+
+struct adc_sqr1 {
+	uint32_t l : 4, : 2, sq1 : 5, : 1, sq2 : 5, : 1, sq3 : 5, : 1, sq4 : 5,
+		 : 3;
+};
+
+struct adc_sqr2 {
+	uint32_t sq5 : 5, : 1, sq6 : 5, : 1, sq7 : 5, : 1, sq8 : 5, : 1,
+		 sq9 : 5, : 3;
+};
+
+struct adc_sqr3 {
+	uint32_t sq10 : 5, : 1, sq11 : 5, : 1, sq12 : 5, : 1, sq13 : 5, : 1,
+		 sq14 : 5, : 3;
+};
+
+struct adc_sqr4 {
+	uint32_t sq15 : 5, : 1, sq16 : 5, : 21;
+};
+
 union adc_dr {
 	struct {
 		uint32_t rdata : 16, : 16;
@@ -59,10 +97,10 @@ struct adc_reg {
 	uint32_t tr2_32;					// 0x24
 	uint32_t tr3_32;					// 0x28
 	uint32_t _res1[1];					// 0x2C
-	uint32_t sqr1_32;					// 0x30
-	uint32_t sqr2_32;					// 0x34
-	uint32_t sqr3_32;					// 0x38
-	uint32_t sqr4_32;					// 0x3C
+	struct adc_sqr1 sqr1;					// 0x30
+	struct adc_sqr2 sqr2;					// 0x34
+	struct adc_sqr3 sqr3;					// 0x38
+	struct adc_sqr4 sqr4;					// 0x3C
 	union { union adc_dr dr; uint32_t dr32; };		// 0x40
 	uint32_t _res2[2];					// 0x44
 	uint32_t jsqr32;					// 0x4C
@@ -92,6 +130,9 @@ struct adc_reg {
 	uint32_t cdr32;						// 0x0C
 
 };
+
+_Static_assert (offsetof(struct adc_reg, dr) == 0x40,
+		"ADC registers mismatch at rdata register.");
 
 _Static_assert (offsetof(struct adc_reg, calfact32) == 0xB4,
 	       "ADC registers mismatch.");
