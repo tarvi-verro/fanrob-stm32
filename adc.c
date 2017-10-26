@@ -28,8 +28,8 @@ static inline int vdda_from_raw(int raw)
 {
 #ifdef CONF_L4
 	const int vrefint_cal = *(uint16_t *) 0x1fff75aa;
-	unsigned a = raw * 1000 * 30;
-	unsigned b = vrefint_cal * 12;
+	unsigned a = vrefint_cal * 3000;
+	unsigned b = raw;
 #else
 	const int vrefint_cal = *(uint16_t *) 0x1ffff7ba;
 	unsigned a = raw * 1000 * 33;
@@ -39,8 +39,7 @@ static inline int vdda_from_raw(int raw)
 	return a / b;
 }
 
-int get_vdda()
-{
+static int init_adc() {
 	if (adc->cr.aden == 1)
 		return 0;
 
@@ -55,9 +54,24 @@ int get_vdda()
 	adc->cr.adcal = 1;
 	while (adc->cr.adcal);
 
-	// Enable ADC, vrefint
+	// Enable ADC
 	adc->cr.aden = 1;
 	assert(!adc->cr.adstart);
+	return 1;
+}
+
+static int exit_adc() {
+	adc->cr.addis = 1;
+	while (adc->cr.aden);
+	return 1;
+}
+
+int get_vdda()
+{
+	if (!init_adc())
+		return 0;
+
+	// Enable vrefint
 	adc->ccr.vrefen = 1;
 
 #ifdef CONF_F0
@@ -87,35 +101,23 @@ int get_vdda()
 #endif
 
 	adc->ccr.vrefen = 0;
-	adc->cr.addis = 1;
-	while (adc->cr.aden);
+
+	exit_adc();
 	return vdda_from_raw(data);
 }
 
 int get_temp()
 {
+	if (!init_adc())
+		return 0;
+
 	// Minimum sampling time when reading temperature 5 µs.
 	// temperature sensor max startup time (t_start): 10 µs
 	// adc max power-up time (t_stab): 1 µs
 	// ADC_IN16 input channel -- temperature sensor
 	// vrefen must be set
 	// ADC_IN17 -- vrefint
-	if (adc->cr.aden == 1)
-		return 0;
-
-#ifdef CONF_L4
-	adc->cr.deeppwd = 0;
-	adc->cr.advregen = 1;
-	// Wait for t_adcvreg_stup time (20μs)
-	sleep_busy(20*1000);
-#endif
-
-	// Calibrate ADC
-	adc->cr.adcal = 1;
-	while (adc->cr.adcal);
-
-	// Enable ADC, sensor and vref
-	adc->cr.aden = 1;
+	// Enable sensor and vref
 #ifdef CONF_L4
 	adc->ccr.chsel17 = 1;
 #else
@@ -199,8 +201,7 @@ int get_temp()
 #endif
 	adc->ccr.vrefen = 0;
 
-	adc->cr.addis = 1;
-	while (adc->cr.aden);
+	exit_adc();
 	return t;
 }
 
