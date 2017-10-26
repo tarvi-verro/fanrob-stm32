@@ -1,3 +1,6 @@
+#include "gpio-abs.h"
+#define CFG_ADC
+#include "adc-c.h"
 #include "conf.h"
 
 #if !defined (CONF_F0) && !defined (CONF_L4)
@@ -7,12 +10,10 @@ int get_temp() { return 0; }
 int get_vdda() { return 0; }
 #else
 
-#include "adc-c.h"
 #include "adc.h"
 #include "rcc.h"
 #include <stdbool.h>
 #include "rcc-c.h"
-extern void assert(bool);
 
 void setup_adc()
 {
@@ -90,7 +91,6 @@ int get_vdda()
 	adc->sqr1.l = ADC_LENGTH_1;
 	adc->sqr1.sq1 = 0;
 #endif
-	adc->ccr.vrefen = 1;
 
 	adc->cr.adstart = 1;
 
@@ -107,6 +107,43 @@ int get_vdda()
 	exit_adc();
 	return vdda_from_raw(data);
 }
+
+#ifdef CONF_L4
+int get_hvpwr_vdd()
+{
+	if (!init_adc())
+		return 0;
+
+	adc->ccr.vrefen = 1;
+	adc->smpr1.smp0 = 0x7;
+
+	while (!adc->isr.adrdy);
+
+	adc->sqr1.l = ADC_LENGTH_2;
+	adc->sqr1.sq1 = 0; // VDDA
+	adc->sqr1.sq2 = cfg_adc.hvpwr_adc_in;
+
+	adc->cr.adstart = 1;
+	while (adc->cr.adstart);
+	while (!adc->isr.eoc);
+	int data_vdda = adc->dr.data;
+
+	adc->cr.adstart = 1;
+	while (adc->cr.adstart);
+	while (!adc->isr.eoc);
+	int data_hvpwr_vdd = adc->dr.data;
+
+	assert(adc->isr.eos);
+	exit_adc();
+
+	int v = vdda_from_raw(data_vdda) * data_hvpwr_vdd / ((1 << 12) - 1);
+
+	// vin = vout * (z1 + z2) / z2
+	int r1 = cfg_adc.r1;
+	int r2 = cfg_adc.r2;
+	return v * (r1 + r2) / r2 + cfg_adc.v_offset;
+}
+#endif
 
 int get_temp()
 {
@@ -155,8 +192,6 @@ int get_temp()
 	while (!adc->isr.eoc);
 
 	int data = adc->dr.data;
-
-	assert(!adc->cr.adstart);
 
 	adc->cr.adstart = 1;
 	while (adc->cr.adstart);

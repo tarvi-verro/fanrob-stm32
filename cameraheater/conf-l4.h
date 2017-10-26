@@ -1,5 +1,14 @@
 /* conf for the NUCLEO(32)-L432KC */
 
+#ifdef CFG_ADC
+static const struct adc_configuration cfg_adc = {
+	.hvpwr = PB0,
+	.hvpwr_adc_in = 15,
+	.r1 = 80000,
+	.r2 = 8000,
+	.v_offset = 233,
+};
+#endif
 
 #ifdef CFG_MAIN
 static const struct main_configuration cfg_main = {

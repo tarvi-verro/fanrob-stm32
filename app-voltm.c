@@ -31,6 +31,18 @@ static void draw(int all)
 	lcd_setcaret(LCD_WIDTH - 3 - (xn + 2) * 5, 2);
 	print_decimal_fixpt(lcd_putc, v, xn, 3, 1000);
 	lcd_putc('v');
+
+#ifdef CONF_L4
+	// HVPWR display
+	lcd_setcaret(2, 3);
+	lcd_puts("hvpwr:");
+
+	int hvpwr_vdd = get_hvpwr_vdd();
+	xn = decimal_length(hvpwr_vdd);
+	lcd_setcaret(LCD_WIDTH - 3 - (xn + 2) * 5, 3);
+	print_decimal_fixpt(lcd_putc, hvpwr_vdd, xn, 3, 1000);
+	lcd_putc('v');
+#endif
 }
 
 static void sel()

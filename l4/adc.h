@@ -14,7 +14,7 @@ struct adc_cr {
 };
 
 struct adc_cfgr {
-	uint32_t dmaen : 1, dmacfg : 1, : 1, : 2, align : 1, extsel : 4,
+	uint32_t dmaen : 1, dmacfg : 1, : 1, res : 2, align : 1, extsel : 4,
 		 exten : 2, ovrmod : 1, cont : 1, autdly : 1, : 1, discen : 1,
 		 discnum : 3, jdisken : 1, jqm : 1, awd1sgl : 1, awd1en : 1,
 		 jawd1en : 1, jauto : 1, awd1ch : 5, jqdis : 1;
