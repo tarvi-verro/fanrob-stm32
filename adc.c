@@ -39,7 +39,8 @@ static inline int vdda_from_raw(int raw)
 	return a / b;
 }
 
-static int init_adc() {
+static int init_adc()
+{
 	if (adc->cr.aden == 1)
 		return 0;
 
@@ -60,7 +61,8 @@ static int init_adc() {
 	return 1;
 }
 
-static int exit_adc() {
+static int exit_adc()
+{
 	adc->cr.addis = 1;
 	while (adc->cr.aden);
 	return 1;
