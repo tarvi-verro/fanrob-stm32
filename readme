@@ -1,0 +1,31 @@
+This is a codebase that has grown out of hacking with the STM32 based nucleo
+boards.
+
+Most of what you find here has been written from scratch using the STM
+documentation.
+
+One of the more insane ideas used in this project is using C bitfields to
+handle hardware registers. While it is not a reasonable thing to do as far as
+the C standard goes, it works alright in practise with GCC, for the most part,
+anyway.
+
+The two projects that use this codebase are found in the subdirectories
+cameraheater/ and watercooling/.
+
+
+cameraheater/
+-------------
+Code in this subdirectory is for a processor that handles the monitoring of
+battery voltages and temperatures. It also handles the adjustable camera lens
+heating, necessary to avoid lens "sweat" as the environment temperature
+changes.
+
+This is based on an NUCLEO-L432KC board.
+
+watercooling/
+-------------
+This concentrates code for a microprocessor that controls fan speeds and
+monitors temperatures in a computer case.
+
+The board used for this project is NUCLEO-L031K6.
+
