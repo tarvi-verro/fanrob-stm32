@@ -11,12 +11,12 @@ ASFLAGS_L4=-g3 -mthumb -mcpu=cortex-m4 -EL $(ASFLAGS)
 LDFLAGS_L4=$(LDFLAGS)
 
 
-$O/prg-l4: $(OBJ:%.o=%-l4.o) $O/../l4/early-l4.o $(B_L4)/linker.ld | chkpath
+$O/prg-l4: $(OBJ:%.o=%-l4.o) $O/$(B_L4)/early-l4.o $(B_L4)/linker.ld | chkpath
 ifeq ($(PRINT_PRETTY), 1)
 	@printf "  LD\t$@\n"
-	@$(LD) -T ../l4/linker.ld -o $@ $(filter-out ../l4/linker.ld, $^) $(LDFLAGS_L4)
+	@$(LD) -T $(B_L4)/linker.ld -o $@ $(filter-out $(B_L4)/linker.ld, $^) $(LDFLAGS_L4)
 else
-	$(LD) -T ../l4/linker.ld -o $@ $(filter-out ../l4/linker.ld, $^) $(LDFLAGS_L4)
+	$(LD) -T $(B_L4)/linker.ld -o $@ $(filter-out $(B_L4)/linker.ld, $^) $(LDFLAGS_L4)
 endif
 
 $O/prg-l4.bin: $O/prg-l4

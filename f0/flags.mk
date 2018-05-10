@@ -11,12 +11,12 @@ ASFLAGS_F0=-g3 -mthumb -mcpu=cortex-m0 -EL $(ASFLAGS)
 LDFLAGS_F0=$(LDFLAGS)
 
 
-$O/prg-f0: $(OBJ:%.o=%-f0.o) $O/../f0/early-f0.o $(B_F0)/linker.ld | chkpath
+$O/prg-f0: $(OBJ:%.o=%-f0.o) $O/$(B_F0)/early-f0.o $(B_F0)/linker.ld | chkpath
 ifeq ($(PRINT_PRETTY), 1)
 	@printf "  LD\t$@\n"
-	@$(LD) -T ../f0/linker.ld -o $@ $(filter-out ../f0/linker.ld, $^) $(LDFLAGS_F0)
+	@$(LD) -T $(B_F0)/linker.ld -o $@ $(filter-out $(B_F0)/linker.ld, $^) $(LDFLAGS_F0)
 else
-	$(LD) -T ../f0/linker.ld -o $@ $(filter-out ../f0/linker.ld, $^) $(LDFLAGS_F0)
+	$(LD) -T $(B_F0)/linker.ld -o $@ $(filter-out $(B_F0)/linker.ld, $^) $(LDFLAGS_F0)
 endif
 
 
