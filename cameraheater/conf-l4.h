@@ -67,7 +67,8 @@ static const struct uart_configuration cfg_uart = {
 	.dma = dma2_macro,
 	.dma_sel_lpuart_rx = 4,
 	.dma_sel_lpuart_tx = 4,
-
+	.baud = 9600,
+	.clksrc = RCC_CLKSRC_LSE,
 };
 /* Configure uart.c */
 #define ic_dma_rx i_dma2_ch7

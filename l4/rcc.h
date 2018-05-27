@@ -96,7 +96,7 @@ struct rcc_csr {
 		 sftrstf : 1, iwwgrstf : 1, wwdgrstf : 1, lpwrstf : 1;
 };
 
-enum {
+enum rcc_clksrc {
 	RCC_CLKSRC_PCLK,
 	RCC_CLKSRC_SYSCLK,
 	RCC_CLKSRC_HSI16,
@@ -104,8 +104,9 @@ enum {
 };
 
 struct rcc_ccipr {
-	uint32_t uart1sel : 2, uart2sel : 2, uart3sel : 2, : 4, lpuart1sel : 2,
-		 i2c1sel : 2, i2c2sel : 2, i2c3sel : 2, lptim1sel : 2,
+	uint32_t uart1sel : 2, uart2sel : 2, uart3sel : 2, : 4;
+	enum rcc_clksrc lpuart1sel : 2;
+	uint32_t i2c1sel : 2, i2c2sel : 2, i2c3sel : 2, lptim1sel : 2,
 		 lptim2sel : 2, sai1sel : 2, : 2, clk48sel : 2, adcsel : 2,
 		 swpmi1sel : 1, : 1;
 };

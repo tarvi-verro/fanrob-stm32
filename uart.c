@@ -4,6 +4,7 @@
 #include "assert-c.h"
 #include "uart.h"
 #include "conf.h"
+#include "rcc-abs.h"
 
 #ifdef CONF_F0
 #warning uart not supported on target
@@ -173,6 +174,29 @@ void uart_putc(char c)
 
 extern void clock_init_lse(); // clock.c
 
+static unsigned lpuartdiv_get()
+{
+	// Set the baud rate
+	unsigned fck = 32768; // LSE
+	if (cfg_uart.clksrc == RCC_CLKSRC_LSE)
+		fck = 32768;
+	else if (cfg_uart.clksrc == RCC_CLKSRC_SYSCLK)
+		fck = rcc_get_sysclk();
+	assert(fck);
+
+	unsigned d0 = 1;
+	if (fck >     10000000)
+		d0 = 100;
+	else if (fck > 1000000)
+		d0 = 10;
+
+	unsigned target_baud = 9600;
+	if (cfg_uart.baud)
+		target_baud = cfg_uart.baud;
+	unsigned lpuartdiv = (256*(fck/d0)/(target_baud/10)*d0 + 5)/10; // "LPUARTDIV"
+	assert(lpuartdiv >= 0x300);
+	return lpuartdiv;
+}
 
 void setup_uart()
 {
@@ -196,9 +220,11 @@ void setup_uart()
 		asm("nop");
 
 
-	clock_init_lse();
+	if (cfg_uart.clksrc == RCC_CLKSRC_LSE)
+		clock_init_lse();
+
 	if (lpuart == lpuart1)
-		rcc->ccipr.lpuart1sel = RCC_CLKSRC_LSE;
+		rcc->ccipr.lpuart1sel = cfg_uart.clksrc;
 	else
 		assert(0);
 
@@ -227,7 +253,7 @@ void setup_uart()
 
 	lpuart->cr1 = cr1;
 
-	lpuart->brr.brr = (256*32768/(9600/10) + 5)/10; // "LPUARTDIV"
+	lpuart->brr.brr = lpuartdiv_get();
 
 	struct lpuart_cr2 cr2 = {
 		.addm7 = 0, // 8-bit address detection/4-bit address detection
