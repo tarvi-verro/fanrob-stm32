@@ -17,8 +17,14 @@ enum rcc_msirange {
 	MSIRANGE11_48_MHz,
 };
 
+enum rcc_msirgsel {
+	MSIRGSEL_MSISRANGE,
+	MSIRGSEL_MSIRANGE
+};
+
 struct rcc_cr {
-	uint32_t msion : 1, msirdy : 1, msipllen : 1, msirgsel : 1;
+	uint32_t msion : 1, msirdy : 1, msipllen : 1;
+	enum rcc_msirgsel msirgsel : 1;
 	enum rcc_msirange msirange : 4;
 	uint32_t hsion : 1, hsikeron : 1, hsirdy : 1, hsiasfs : 1, : 4,
 		 hseon : 1, hserdy : 1, hsebyp : 1, csson : 1, : 4, pllon : 1,
@@ -103,12 +109,22 @@ enum rcc_clksrc {
 	RCC_CLKSRC_LSE,
 };
 
+enum {
+	RCC_CLK48SEL_HSI48,
+	RCC_CLK48SEL_PLLSAI1,
+	RCC_CLK48SEL_PLL,
+	RCC_CLK48SEL_MSI,
+};
 struct rcc_ccipr {
 	uint32_t uart1sel : 2, uart2sel : 2, uart3sel : 2, : 4;
 	enum rcc_clksrc lpuart1sel : 2;
 	uint32_t i2c1sel : 2, i2c2sel : 2, i2c3sel : 2, lptim1sel : 2,
 		 lptim2sel : 2, sai1sel : 2, : 2, clk48sel : 2, adcsel : 2,
 		 swpmi1sel : 1, : 1;
+};
+
+struct rcc_crrcr {
+	uint32_t hsi48on : 1, hsi48rdy : 1, : 5, hsi48cal : 9, : 16;
 };
 
 struct rcc_reg {
@@ -149,8 +165,8 @@ struct rcc_reg {
 	struct rcc_ccipr ccipr;		// 0x88
 	uint32_t _padding8[1];		// 0x8C
 	struct rcc_bdcr bdcr;		// 0x90
-	uint32_t csr;			// 0x94
-	uint32_t crrcr;			// 0x98
+	struct rcc_csr csr;		// 0x94
+	struct rcc_crrcr crrcr;		// 0x98
 };
 
 _Static_assert (offsetof(struct rcc_reg, crrcr) == 0x98,

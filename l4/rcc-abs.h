@@ -20,8 +20,16 @@ static inline unsigned rcc_get_sysclk()
 		[MSIRANGE11_48_MHz] = 48000000,
 	};
 
-	if (rcc->cfgr.sw == SW_MSI)
-		return msilup[rcc->cr.msirange];
+
+	if (rcc->cfgr.sw == SW_MSI) {
+		switch (rcc->cr.msirgsel) {
+		case MSIRGSEL_MSISRANGE:
+			return msilup[rcc->csr.msisrange];
+		case MSIRGSEL_MSIRANGE:
+			return msilup[rcc->cr.msirange];
+		};
+	}
+
 	assert(0);
 	return 0;
 }
