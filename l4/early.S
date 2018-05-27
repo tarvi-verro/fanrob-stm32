@@ -171,7 +171,7 @@ vecs:
 	.word undef_interr	// 0x140, 64, COMP			[2] |= 1 <<  0
 	.word undef_interr	// 0x144, 65, LPTIM1
 	.word undef_interr	// 0x148, 66, LPTIM2
-	.word undef_interr	// 0x14C, 67, USB_FS
+	.word i_usb_fs		// 0x14C, 67, USB_FS through EXTI line 17
 
 	.word i_dma2_ch6	// 0x150, 68, DMA2_CH6			[2] |= 1 <<  4
 	.word i_dma2_ch7	// 0x154, 69, DMA2_CH7
@@ -195,6 +195,9 @@ vecs:
 
 	.weak undef_interr
 	.thumb_set undef_interr,Default_Handler
+
+	.weak i_usb_fs
+	.thumb_set i_usb_fs,Default_Handler
 
 	.weak i_dma2_ch7
 	.thumb_set i_dma2_ch7,Default_Handler
