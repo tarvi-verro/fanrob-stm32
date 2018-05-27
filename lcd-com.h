@@ -54,7 +54,7 @@ extern void lcd_repeat(uint8_t x, int n);
 extern void lcd_clear();
 
 /**
- * setup_lcd() - initialize lcd and periperals
+ * setup_lcd() - initialize lcd and peripheral
  */
 extern void setup_lcd(void);
 

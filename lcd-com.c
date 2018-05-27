@@ -140,7 +140,7 @@ void setup_lcd(void)
 		.dir = DMA_DIR_FROM_MEM,
 		.circ = 0, /* circular mode */
 		.minc = 1, /* increment memory addr */
-		.pinc = 0, /* periperal address does not change */
+		.pinc = 0, /* peripheral address does not change */
 		.htie = 0, /* half-transfter interrupt */
 		.tcie = 0, /* transfer complete interrupt */
 		.teie = 0, /* transfer error interrupt */
