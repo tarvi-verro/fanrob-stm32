@@ -7,12 +7,11 @@ AR:=arm-none-eabi-ar
 LD:=arm-none-eabi-ld
 OC:=arm-none-eabi-objcopy
 
-# Where libgcc.a and the libnosys.a are, often times the version has to be
-# bumped.
-PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/7.2.0/armv6-m
+# Where libgcc.a is, often times the version has to be bumped.
+PATH_LIBGCC?=/usr/lib/gcc/arm-none-eabi/8.1.0/thumb/v6-m/nofp
 
-# Location of libc.a and libm.a.
-PATH_LIBNEW?=/usr/arm-none-eabi/lib/armv6-m
+# Location of libc.a, libm.a and libnosys.a.
+PATH_LIBNEW?=/usr/arm-none-eabi/lib/thumb/v6-m/nofp
 
 ifndef O
 O:=build/cameraheater
