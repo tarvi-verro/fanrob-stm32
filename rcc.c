@@ -1,8 +1,9 @@
 #include "rcc-c.h"
 
-// These values are based on default startup system clock state.
-static const unsigned t_clock_ns = 125; // 8 MHz = 1/(8 * 10⁶) s = 0.000000125 s = 125 ns
-const unsigned sleep_granuality_ns = 125 * 4; // 500 ns; substract-loop is 4 cycles
+const unsigned sleep_substract_loop_cycles = 4;
+
+// Assume default startup system clock state at 8MHz.
+unsigned sleep_granuality_ns = 125 * sleep_substract_loop_cycles; // 500 ns
 
 void sleep_busy(unsigned ns)
 {
