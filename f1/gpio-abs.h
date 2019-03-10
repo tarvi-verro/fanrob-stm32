@@ -26,8 +26,8 @@ enum gpio_otype {
 	GPIO_OTYPER_OD,
 };
 enum gpio_ospeed {
-	GPIO_OSPEEDR_LOW,
 	GPIO_OSPEEDR_MEDIUM,
+	GPIO_OSPEEDR_LOW,
 	GPIO_OSPEEDR_HIGH,
 };
 enum gpio_pupd {
@@ -74,7 +74,6 @@ static inline void gpio_configure(enum pin p, struct gpio_conf *cfg)
 
 	enum gpio_crl_cnf cnf;
 	enum gpio_crl_mode mode;
-	assert(cfg->mode != GPIO_MODER_AF);
 	if (cfg->mode == GPIO_MODER_IN) {
 		mode = GPIO_MODE_INPUT;
 		if (cfg->pupd != GPIO_PUPDR_NONE) {
@@ -88,7 +87,7 @@ static inline void gpio_configure(enum pin p, struct gpio_conf *cfg)
 		mode = GPIO_MODE_INPUT;
 		cnf = GPIO_CNF_ANALOG;
 	} else if (cfg->mode == GPIO_MODER_AF) {
-		mode = GPIO_MODE_OUT_2MHZ;
+		mode = cfg->ospeed + 1;
 		cnf = (cfg->otype == GPIO_OTYPER_PP)
 			? GPIO_CNF_OUT_AF_PP : GPIO_CNF_OUT_AF_OD;
 	} else if (cfg->mode == GPIO_MODER_OUT) {
@@ -113,7 +112,7 @@ static inline void gpio_configure(enum pin p, struct gpio_conf *cfg)
 	if (cfg->mode != GPIO_MODER_AF)
 		return;
 
-	assert(1==2); // TODO: Alternative function handling
+	assert(cfg->alt == -1); // TODO: Alternative function handling
 }
 
 static inline int gpio_read(enum pin p)

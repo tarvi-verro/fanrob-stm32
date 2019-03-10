@@ -3,16 +3,16 @@
 #include <stddef.h>
 
 enum gpio_crl_cnf {
-	GPIO_CNF_ANALOG,
-	GPIO_CNF_IN_FLOAT,
-	GPIO_CNF_IN_PUPD,
-	GPIO_CNF_RESERVED,
-
-	// I wish GDB showed the following options aswell, oh well
 	GPIO_CNF_OUT_PP = 0,
 	GPIO_CNF_OUT_OD,
 	GPIO_CNF_OUT_AF_PP,
 	GPIO_CNF_OUT_AF_OD,
+
+	// I wish GDB showed the following options aswell, oh well
+	GPIO_CNF_ANALOG = 0,
+	GPIO_CNF_IN_FLOAT,
+	GPIO_CNF_IN_PUPD,
+	GPIO_CNF_RESERVED,
 };
 enum gpio_crl_mode {
 	GPIO_MODE_INPUT,

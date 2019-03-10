@@ -81,7 +81,7 @@ vecs:
 	.word 0			// 0x34, reserved
 	.word undef_interr	// 0x38, PendSV
 	.word undef_interr	// 0x3C, SysTick
-	.word undef_interr	// 0x40, WWDG
+	.word undef_interr	// 0x40, WWDG			1 << 0, [0]
 	.word undef_interr	// 0x44, PVD
 	.word undef_interr	// 0x48, TAMPER			1 << 2
 	.word undef_interr	// 0x4C, RTC
@@ -100,8 +100,8 @@ vecs:
 	.word undef_interr	// 0x80, DMA1_CH6
 	.word undef_interr	// 0x84, DMA1_CH7
 	.word undef_interr	// 0x88, ADC1_2
-	.word undef_interr	// 0x8C, CAN1_TX
-	.word undef_interr	// 0x90, CAN1_RX0
+	.word i_usbhp_cantx	// 0x8C, CAN1_TX		1 << 19, [0]
+	.word i_usblp_canrx0	// 0x90, CAN1_RX0		1 << 20, [0]
 	.word undef_interr	// 0x94, CAN1_RX1
 	.word undef_interr	// 0x98, CAN1_SCE
 	.word i_exti_9_5	// 0x9C, EXTI9_5 EXTI Line[9:5]
@@ -113,7 +113,7 @@ vecs:
 	.word undef_interr	// 0xB4, TIM3
 	.word undef_interr	// 0xB8, TIM4
 	.word undef_interr	// 0xBC, I2C1_EV
-	.word undef_interr	// 0xC0, I2C1_ER
+	.word undef_interr	// 0xC0, I2C1_ER		1 << 0, [1]
 	.word undef_interr	// 0xC4, I2C2_EV
 	.word undef_interr	// 0xC8, I2C2_ER
 	.word undef_interr	// 0xCC, SPI1
@@ -146,4 +146,10 @@ vecs:
 
 	.weak i_exti_9_5
 	.thumb_set i_exti_9_5,Default_Handler
+
+	.weak i_usbhp_cantx
+	.thumb_set i_usbhp_cantx,Default_Handler
+
+	.weak i_usblp_canrx0
+	.thumb_set i_usblp_canrx0,Default_Handler
 
