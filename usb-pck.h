@@ -98,19 +98,32 @@ struct pck_interface_descriptor {
 _Static_assert(sizeof(struct pck_interface_descriptor) == 9,
 		"interface descriptor mismatch");
 
+enum pck_endpoint_direction {
+	PCK_DIRECTION_HOST_TO_DEV,
+	PCK_DIRECTION_DEV_TO_HOST,
+};
+enum pck_endpoint_transfter_type {
+	PCK_TRANSFER_TYPE_CONTROL,
+	PCK_TRANSFER_TYPE_ISOCHRONOUS,
+	PCK_TRANSFER_TYPE_BULK,
+	PCK_TRANSFER_TYPE_INTERRUPT,
+};
 struct pck_endpoint_descriptor {
 	uint8_t bLength;
 	uint8_t bDescriptorType;
 	struct {
-		uint8_t endpoint_number : 4, : 3, direction : 1;
+		uint8_t endpoint_number : 4, : 3;
+		enum pck_endpoint_direction direction : 1;
 	} bEndpointAddress;
 	struct {
-		uint8_t transfer_type : 2, synchronisation_type : 2,
-			usage_type : 2, : 2;
+		enum pck_endpoint_transfter_type transfer_type : 2;
+		uint8_t synchronisation_type : 2, usage_type : 2, : 2;
 	} bmAttributes;
 	uint16_t wMaxPacketSize;
 	uint8_t bInterval;
-};
+} __attribute__ ((__packed__));
+_Static_assert(sizeof(struct pck_endpoint_descriptor) == 7,
+		"endpoint descriptor unexpected size");
 
 struct pck_string_langid {
 	uint8_t bLength;

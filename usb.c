@@ -230,7 +230,7 @@ void i_usblp_canrx0()
 	while (usbfs->istr.ctr) {
 		assert(usbfs->istr.ep_id == 0);
 
-		if (usbfs->istr.dir == 0) {
+		if (usbfs->istr.dir == USB_DIR_DEVICE_TO_HOST) {
 			assert(usbfs->ep0r.stat_rx == USB_STAT_NAK);
 
 			ctr_tx_reset(&usbfs->ep0r);

@@ -8,9 +8,15 @@ struct usb_cntr {
 		 errm : 1, pmaovrm : 1, ctrm : 1;
 };
 
+enum usb_istr_dir {
+	USB_DIR_DEVICE_TO_HOST,
+	USB_DIR_HOST_TO_DEVICE
+};
 struct usb_istr {
-	uint32_t ep_id : 4, dir : 1, : 3, esof : 1, sof : 1, reset : 1,
-		 susp : 1, wkup : 1, err : 1, pmaovr : 1, ctr : 1;
+	uint32_t ep_id : 4;
+	enum usb_istr_dir dir : 1;
+	uint32_t : 3, esof : 1, sof : 1, reset : 1, susp : 1, wkup : 1,
+		 err : 1, pmaovr : 1, ctr : 1;
 };
 
 struct usb_fnr {
