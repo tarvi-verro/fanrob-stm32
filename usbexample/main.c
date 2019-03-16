@@ -9,6 +9,7 @@
 #include "usb-c.h"
 #include "rcc-c.h"
 
+
 void setup_clocks()
 {
 	// Enable HSE
@@ -47,7 +48,7 @@ int main()
 		sleep_busy(sleep_period-flash_period);
 	}
 	while (true) {
-		sleep_busy(1000*1000);
+		sleep_busy(10*1000);
 		i++;
 		if (i % 2000 == 0 && i % 10000 < 5000)
 			gpio_flip(cfg_assert.led);

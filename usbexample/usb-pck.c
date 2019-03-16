@@ -4,7 +4,7 @@
 
 static void setup_send(struct pck_setup *r, void *pck, size_t s)
 {
-	usb_send(USB_EP0, pck, s < r->wLength ? s : r->wLength);
+	usb_send(USB_EP_CONTROL, pck, s < r->wLength ? s : r->wLength);
 }
 
 static void req_get_descriptor(struct pck_setup *r)
@@ -22,7 +22,7 @@ static void req_get_descriptor(struct pck_setup *r)
 		.bDeviceClass = 0xFF,
 		.bDeviceSubClass = 0xFF,
 		.bDeviceProtocol = 0xFF,
-		.bMaxPacketSize = usb_get_max_packet_size(USB_EP0),
+		.bMaxPacketSize = usb_get_max_packet_size(USB_EP_CONTROL),
 		.idVendor = 0xDEAF,
 		.idProduct = 0xCAFE,
 		.bcdDevice = 0xFACE,
@@ -118,7 +118,7 @@ static void req_get_descriptor(struct pck_setup *r)
 		}
 		break;
 	default:
-		usb_send(USB_EP0, NULL, 0);
+		usb_send(USB_EP_CONTROL, NULL, 0);
 	}
 }
 
@@ -130,13 +130,13 @@ void handle_setup_requests(struct pck_setup *r)
 		break;
 	case PCK_REQUEST_SET_ADDRESS:
 		usb_set_address(r->wValue);
-		usb_respond(USB_EP0, USB_RESPONSE_ACK);
+		usb_respond(USB_EP_CONTROL, USB_RESPONSE_ACK);
 		break;
 	case PCK_REQUEST_SET_CONFIGURATION:
-		usb_respond(USB_EP0, USB_RESPONSE_ACK);
+		usb_respond(USB_EP_CONTROL, USB_RESPONSE_ACK);
 		break;
 	default:
-		usb_respond(USB_EP0, USB_RESPONSE_STALL);
+		usb_respond(USB_EP_CONTROL, USB_RESPONSE_STALL);
 	}
 }
 

@@ -2,8 +2,11 @@
 #warning "usb.c code has only been tested with STM32F103 blue pill."
 #endif
 
-#include "conf.h"
+#define CFG_USB
 #include "usb.h"
+#include "usb-c.h"
+#include "conf.h"
+
 #include "rcc.h"
 #include "rcc-c.h"
 #include "regs.h"
@@ -11,7 +14,9 @@
 #include "assert-c.h"
 #include "usb-pck.h"
 #include "gpio-abs.h"
-#include "usb-c.h"
+
+
+#define cfg_usb_ep_length (sizeof(cfg_usb_ep) / sizeof(cfg_usb_ep[0]))
 
 uint8_t addr;
 int addr_received = 0;
@@ -22,15 +27,27 @@ int err_count = 0;
 static void usb_reset();
 
 /* Packet memory layout */
-struct usb_buffer_desc_addr_off *pm_buft =
-	(struct usb_buffer_desc_addr_off *) usb_packet_memory;
+struct pm_layout {
+	struct usb_buffer_desc_addr_off desc[cfg_usb_ep_length];
+	uint16_t io[];
+} *pm = (struct pm_layout *) usb_packet_memory;
 
+struct {
+	uint16_t rx;
+	uint16_t tx;
+} pm_io_offset[cfg_usb_ep_length];
 
-static const int pm_rxbf_offset =  64;
-static const int pm_txbf_offset = 128;
+static void ep_pm_layout_init()
+{
+	int o = 0;
+	for (int i = 0; i < cfg_usb_ep_length; i++) {
+		pm_io_offset[i].rx = o;
+		o += cfg_usb_ep[i].rx_size;
+		pm_io_offset[i].tx = o;
+		o += cfg_usb_ep[i].tx_size;
+	}
+}
 
-uint32_t *const pm_rxbf = usb_packet_memory + pm_rxbf_offset/2;
-uint32_t *const pm_txbf = usb_packet_memory + pm_txbf_offset/2;
 
 /* Helpers for accessing registers and packet memory. */
 static inline struct usb_epnr epnr_invariant(struct usb_epnr e)
@@ -116,8 +133,11 @@ static void *pm_memcpy(void *dest, const void *src, size_t n)
 /* Exported functions */
 unsigned usb_get_max_packet_size(enum usb_endp ep)
 {
-	assert(ep == USB_EP0);
-	return pm_txbf_offset - pm_rxbf_offset;
+	assert(ep < cfg_usb_ep_length);
+
+	int a = cfg_usb_ep[ep].rx_size;
+	int b = cfg_usb_ep[ep].tx_size;
+	return a > b ? a : b;
 }
 
 void usb_set_address(uint8_t a)
@@ -128,40 +148,59 @@ void usb_set_address(uint8_t a)
 
 void usb_respond(enum usb_endp ep, enum usb_response r)
 {
-	assert(ep == USB_EP0);
+	volatile struct usb_epnr *epnr = usbfs->epnr + ep;
 	switch (r) {
 	case USB_RESPONSE_ACK:
-		pm_buft[0].countn_tx.countn_tx = 0;
-		stat_tx_set(&usbfs->ep0r, USB_STAT_VALID);
+		pm->desc[ep].countn_tx.countn_tx = 0;
+		stat_tx_set(epnr, USB_STAT_VALID);
 		break;
 	case USB_RESPONSE_NAK:
-		stat_tx_set(&usbfs->ep0r, USB_STAT_NAK);
+		stat_tx_set(epnr, USB_STAT_NAK);
 		break;
 	case USB_RESPONSE_STALL:
-		stat_tx_set(&usbfs->ep0r, USB_STAT_STALL);
+		stat_tx_set(epnr, USB_STAT_STALL);
 		break;
 	}
 }
 
 void usb_send(enum usb_endp ep, const void *b, size_t len)
 {
-	assert(ep == USB_EP0);
+	assert(len <= cfg_usb_ep[ep].tx_size);
 	if (!len) {
-		stat_tx_set(&usbfs->ep0r, USB_STAT_STALL);
+		stat_tx_set(usbfs->epnr + ep, USB_STAT_STALL);
 		return;
 	}
 
-	pm_memcpy(pm_txbf, b, len);
-	pm_buft->countn_tx.countn_tx = len;
+	pm_memcpy(pm->io + pm_io_offset[ep].tx, b, len);
+	pm->desc[ep].countn_tx.countn_tx = len;
 
-	assert(pm_buft->countn_tx.countn_tx == len);
-	assert(usbfs->ep0r.stat_tx == USB_STAT_NAK);
-	assert(usbfs->ep0r.stat_rx == USB_STAT_NAK);
+	stat_tx_set(usbfs->epnr + ep, USB_STAT_VALID);
+}
 
-	stat_tx_set(&usbfs->ep0r, USB_STAT_VALID);
+static void ep_sanity_check()
+{
+	// Check ep0r initial value.
+	const struct usb_epnr ep0r_init = {
+		.ea = 0,
+		.ep_type = USB_EP_TYPE_CONTROL,
+		.stat_tx = USB_STAT_NAK,
+		.stat_rx = USB_STAT_VALID,
+		.ep_kind = 0,
+	};
+	assert(cfg_usb_ep[0].epnr_init.u32 == ep0r_init.u32);
+
+	// Check that the endpoint buffer sizes are aligned
+	for (int i = 0; i < cfg_usb_ep_length; i++) {
+		const struct usb_configuration_ep *e = cfg_usb_ep + i;
+		assert((e->rx_size & 0x1) == 0);
+		assert((e->tx_size & 0x1) == 0);
+	}
 }
 
 void setup_usb() {
+	ep_pm_layout_init();
+	ep_sanity_check();
+
 	nvic_iser[0] |= (1 << 19) | (1 << 20);
 
 	rcc->apb2enr.iopaen = 1;
@@ -187,25 +226,22 @@ static void usb_reset() {
 
 
 	usbfs->btable.btable = 0;
-	pm_buft[0].addrn_tx.addrn_tx = pm_txbf_offset;
-	pm_buft[0].countn_tx.countn_tx = 0;
+	for (int i = 0; i < cfg_usb_ep_length; i++) {
+		unsigned o = offsetof(struct pm_layout, io) / 2;
+		pm->desc[i].addrn_tx.addrn_tx = pm_io_offset[i].tx + o;
+		pm->desc[i].countn_tx.countn_tx = 0;
 
-	pm_buft[0].addrn_rx.addrn_rx = pm_rxbf_offset;
-	pm_buft[0].countn_rx.countn_rx = 0;
+		pm->desc[i].addrn_rx.addrn_rx = pm_io_offset[i].rx + o;
+		pm->desc[i].countn_rx.countn_rx = 0;
 
-	unsigned y = usb_get_max_packet_size(USB_EP0);
-	int u = y >= 32; // 0: 2 byte units, 1: 32 byte
-	pm_buft[0].countn_rx.blsize = u;
-	pm_buft[0].countn_rx.num_block = y/(2 + u*30); // divide y by 2 or 32
+		unsigned y = cfg_usb_ep[i].rx_size;
+		int u = y >= 32; // 0: 2 byte units, 1: 32 byte
+		pm->desc[i].countn_rx.blsize = u;
+		pm->desc[i].countn_rx.num_block = y/(2 + u*30); // divide y by 2 or 32
 
-	struct usb_epnr ep0r = {
-		.ea = 0,
-		.ep_type = USB_EP_TYPE_CONTROL,
-		.stat_tx = USB_STAT_NAK,
-		.stat_rx = USB_STAT_VALID,
-		.ep_kind = 0,
-	};
-	usbfs->ep0r.u32 = ep0r.u32;
+		usbfs->epnr[i].u32 = cfg_usb_ep[i].epnr_init.u32;
+	}
+
 
 	usbfs->cntr.ctrm = 1;
 	usbfs->istr_u16 = 0;
@@ -213,7 +249,11 @@ static void usb_reset() {
 	usbfs->daddr.ef = 1;
 }
 
-struct pck_setup pck_setup_buffer;
+static union {
+	struct pck_setup pck_setup;
+	uint8_t htd[32];
+} buffer;
+
 
 void i_usblp_canrx0()
 {
@@ -228,37 +268,52 @@ void i_usblp_canrx0()
 	}
 
 	while (usbfs->istr.ctr) {
-		assert(usbfs->istr.ep_id == 0);
+		enum usb_endp ep = usbfs->istr.ep_id;
+		volatile struct usb_epnr *epnr = usbfs->epnr + ep;
 
 		if (usbfs->istr.dir == USB_DIR_DEVICE_TO_HOST) {
-			assert(usbfs->ep0r.stat_rx == USB_STAT_NAK);
+			if (ep == USB_EP_CONTROL)
+				assert(epnr->stat_rx == USB_STAT_NAK);
 
-			ctr_tx_reset(&usbfs->ep0r);
-			if (!addr_received) {
+			ctr_tx_reset(epnr);
+			if (ep == USB_EP_CONTROL && !addr_received) {
 				usbfs->daddr.add = addr;
 				addr_received = 1;
 			}
-			stat_rx_set(&usbfs->ep0r, USB_STAT_VALID);
+
+			if (ep == USB_EP_CONTROL)
+				stat_rx_set(epnr, USB_STAT_VALID);
 			continue;
 		} else {
 			assert(!usbfs->istr.err);
 
-			assert(usbfs->ep0r.stat_rx == USB_STAT_NAK);
-			if (usbfs->ep0r.setup) {
-				struct pck_setup *p = &pck_setup_buffer;
-				pm_memcpy(p, pm_rxbf, sizeof(struct pck_setup));
+			assert(epnr->stat_rx == USB_STAT_NAK);
+			if (ep == USB_EP_CONTROL && epnr->setup) {
+				struct pck_setup *p = &buffer.pck_setup;
+				pm_memcpy(p, pm->io + pm_io_offset[ep].rx, sizeof(struct pck_setup));
 
 				assert(p->bmRequestType.recipient == PCK_RECIPIENT_DEVICE);
 				assert(p->bmRequestType.type == PCK_TYPE_STANDARD);
 
-				ctr_rx_reset(&usbfs->ep0r);
+				ctr_rx_reset(epnr);
 				handle_setup_requests(p);
-			} else if (usbfs->ep0r.ctr_rx) {
-				ctr_rx_reset(&usbfs->ep0r);
-				stat_rx_set(&usbfs->ep0r, USB_STAT_VALID);
+			} else if (ep == USB_EP_CONTROL && epnr->ctr_rx) {
+				ctr_rx_reset(epnr);
+				stat_rx_set(epnr, USB_STAT_VALID);
+			} else if (epnr->ctr_rx) {
+				uint8_t *b = buffer.htd;
+				int length = pm->desc[ep].countn_rx.countn_rx;
+				pm_memcpy(b, pm->io + pm_io_offset[ep].rx, length);
+
+				ctr_rx_reset(epnr);
+				stat_rx_set(epnr, USB_STAT_VALID);
+
+				usb_htd_handle(ep, b, length);
 			}
 
 		}
 	}
 }
+
+__attribute__ ((weak)) void usb_htd_handle(enum usb_endp ep, void *dat, int len) {}
 
