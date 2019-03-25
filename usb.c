@@ -201,6 +201,18 @@ void setup_usb() {
 	ep_pm_layout_init();
 	ep_sanity_check();
 
+	struct gpio_conf rstcfg = {
+		.mode = GPIO_MODER_OUT,
+		.otype = GPIO_OTYPER_PP,
+		.pupd = GPIO_PUPDR_NONE,
+		.ospeed = GPIO_OSPEEDR_LOW,
+	};
+	gpio_configure(PA11, &rstcfg);
+	gpio_write(PA11, 0);
+	gpio_configure(PA12, &rstcfg);
+	gpio_write(PA12, 0);
+	sleep_busy(1000*1000); // wait 1ms
+
 	nvic_iser[0] |= (1 << 19) | (1 << 20);
 
 	rcc->apb2enr.iopaen = 1;
