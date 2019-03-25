@@ -3,7 +3,6 @@
 #include "assert-c.h"
 #include "conf.h"
 
-
 void setup_assert()
 {
 	struct gpio_conf lcfg = {
@@ -15,10 +14,13 @@ void setup_assert()
 	gpio_configure(cfg_assert.led, &lcfg);
 }
 
+__attribute__ ((weak)) void preassert() {}
+
 void assert(int cnd)
 {
 	if (cnd)
 		return;
+	preassert();
 	unsigned int z = 0;
 	unsigned int a;
 	while (1) {
