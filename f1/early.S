@@ -118,7 +118,7 @@ vecs:
 	.word undef_interr	// 0xC8, I2C2_ER
 	.word undef_interr	// 0xCC, SPI1
 	.word undef_interr	// 0xD0, SPI2
-	.word undef_interr	// 0xD4, USART1
+	.word i_usart1		// 0xD4, USART1			1 << 5, [1]
 	.word undef_interr	// 0xD8, USART2
 	.word undef_interr	// 0xDC, USART3
 .size vecs, .-vecs
@@ -152,4 +152,7 @@ vecs:
 
 	.weak i_usblp_canrx0
 	.thumb_set i_usblp_canrx0,Default_Handler
+
+	.weak i_usart1
+	.thumb_set i_usart1,Default_Handler
 

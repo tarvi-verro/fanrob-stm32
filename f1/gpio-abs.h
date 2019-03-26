@@ -108,11 +108,6 @@ static inline void gpio_configure(enum pin p, struct gpio_conf *cfg)
 	// Write out cnf
 	crl[z/8] &= ~(0x3 << (zl*4 + 2));
 	crl[z/8] |= cnf << (zl*4 + 2);
-
-	if (cfg->mode != GPIO_MODER_AF)
-		return;
-
-	assert(cfg->alt == -1); // TODO: Alternative function handling
 }
 
 static inline int gpio_read(enum pin p)

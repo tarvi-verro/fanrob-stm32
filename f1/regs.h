@@ -12,6 +12,7 @@ static volatile struct gpio_reg *const gpio_reg_a = (struct gpio_reg *) 0x400108
 static volatile struct gpio_reg *const gpio_reg_b = (struct gpio_reg *) 0x40010C00;
 static volatile struct gpio_reg *const gpio_reg_c = (struct gpio_reg *) 0x40011000;
 static volatile struct usb_reg *const usbfs = (struct usb_reg *) 0x40005C00;
+static volatile struct usart_reg *const usart1 = (struct usart_reg *) 0x40013800;
 
 static uint32_t *const nvic_iser = (uint32_t *) 0xe000e100;
 static volatile struct exti_reg *const exti = (struct exti_reg *) 0x40010400;
