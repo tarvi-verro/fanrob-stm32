@@ -29,3 +29,13 @@ monitors temperatures in a computer case.
 
 The board used for this project is NUCLEO-L031K6.
 
+usbexample/
+-----------
+This is a template for a working USB cli interface. Good starting template for
+a project using the STM32F103 blue pill board with the on-board USB connection.
+
+PS: to get the /dev/ttyUSB0 device to show up, the following command might be
+necessary (as root):
+
+	echo deaf cafe > /sys/bus/usb-serial/drivers/generic/new_id
+
