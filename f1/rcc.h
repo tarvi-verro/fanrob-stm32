@@ -46,10 +46,38 @@ enum rcc_cfgr_hpre {
 	RCC_HPRE_SYSCLK_DIV_256,
 	RCC_HPRE_SYSCLK_DIV_512,
 };
+static inline unsigned get_cfgr_hpre_divisor(enum rcc_cfgr_hpre m) {
+	return (unsigned[]) { 1, 2, 4, 8, 16, 64, 128, 256, 512 }[m];
+}
+enum rcc_cfgr_adcpre {
+	RCC_ADCPRE_PCLK2_DIV_2,
+	RCC_ADCPRE_PCLK2_DIV_4,
+	RCC_ADCPRE_PCLK2_DIV_6,
+	RCC_ADCPRE_PCLK2_DIV_8,
+};
+static inline unsigned get_cfgr_adcpre_divisor(enum rcc_cfgr_adcpre m) {
+	return (unsigned[]) { 2, 4, 6, 8 }[m];
+}
+enum rcc_cfgr_ppre {
+	RCC_PPRE_HCLK_DIV_0,
+	RCC_PPRE_HCLK_DIV_2 = 4,
+	RCC_PPRE_HCLK_DIV_4,
+	RCC_PPRE_HCLK_DIV_8,
+	RCC_PPRE_HCLK_DIV_16,
+};
+static inline unsigned get_cfgr_ppre_divisor(enum rcc_cfgr_ppre m) {
+	if (m < RCC_PPRE_HCLK_DIV_2)
+		return 1;
+	else
+		return (unsigned[]) { 2, 4, 8, 16 }[m-4];
+}
+static const unsigned cfgr_ppre_divisor[] = {};
 struct rcc_cfgr {
 	enum rcc_cfgr_sw sw : 2, sws : 2;
 	enum rcc_cfgr_hpre hpre : 4;
-	uint32_t ppre1 : 3, ppre2 : 3, adcpre : 2;
+	enum rcc_cfgr_ppre ppre1 : 3;
+	enum rcc_cfgr_ppre ppre2 : 3;
+	enum rcc_cfgr_adcpre adcpre : 2;
 	enum rcc_cfgr_pllsrc pllsrc : 1;
 	uint32_t pllxtpre : 1;
 	enum rcc_cfgr_pllmul pllmul : 4;
